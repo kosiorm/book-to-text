@@ -1,4 +1,4 @@
-# Whisper API
+# Book to text
 
 This project is a simple API that interacts with Audible to download and transcribe audiobooks. It can also accept an MP3 URL, download the MP3 file, and transcribe it.
 
