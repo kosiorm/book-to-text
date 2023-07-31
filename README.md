@@ -2,15 +2,14 @@
 
 This project is a simple API that interacts with Audible to download and transcribe audiobooks. It can also accept an MP3 URL, download the MP3 file, and transcribe it.
 
- Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have the following installed:
 
 - [FFmpeg](https://ffmpeg.org/): This is used for audio conversion. Make sure to add it to your system's PATH.
 - [whisperx](https://github.com/m-bain/whisperX): This is used for transcribing audio files. Make sure the `whisperx` command is available in your system's PATH.
 
-
-- [inAudible-NG/tables](https://github.com/inAudible-NG/tables): This is used to get the `ACTIVATION_BYTES` for Audible.
+This project uses code from [inAudible-NG/tables](https://github.com/inAudible-NG/tables) to get the `ACTIVATION_BYTES` for Audible.
 
 ## Endpoints
 
@@ -20,8 +19,12 @@ This endpoint accepts either a book title or an MP3 URL.
 
 #### Request Body
 
-- `bookTitle`: The title of the book to download and transcribe from Audible.
-- `mp3Url`: The URL of an MP3 file to download and transcribe.
+The request body should be a JSON object with one of the following properties:
+
+- `bookTitle`: A string representing the title of the book to download and transcribe from Audible. 
+               For example, `"bookTitle": "The Great Gatsby"`.
+- `mp3Url`: A string representing the URL of an MP3 file to download and transcribe. 
+               For example, `"mp3Url": "http://example.com/path/to/file.mp3"`.
 
 You must provide either `bookTitle` or `mp3Url`, but not both.
 
@@ -39,7 +42,7 @@ The response is a JSON object with the following properties:
 3. Copy the `tmp.env.local` file to `.env.local` and fill in the following environment variables:
    - `EMAIL`: Your Audible email.
    - `PASSWORD`: Your Audible password.
-   - `ACTIVATION_BYTES`: Your Audible activation bytes.
+   - `ACTIVATION_BYTES`: Your Audible activation bytes. If you have activation bytes, put them in `.env.local`. If you don't have activation bytes, use the `bytes` API to automatically update the `.env.local` file when it finishes.
 4. Run the server with `npm run dev`.
 
 ## Usage
