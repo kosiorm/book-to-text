@@ -118,7 +118,6 @@ export default async function handler(req, res) {
             try {
                 await page.type('#lib-search', bookTitle);
                 await page.keyboard.press('Enter');
-                // Czekaj na pojawienie się elementu związane z książką
                 await page.waitForSelector('.adbl-library-content-row');
             } catch (error) {
                 console.error(`Error during page interaction: ${error}`);
