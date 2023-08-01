@@ -47,6 +47,8 @@ The response is a JSON object with the following properties:
 
 ## Usage
 
+To obtain the activation bytes for your Audible account, send a POST request to /api/bytes with the bookTitle parameter.
+
 To download and transcribe a book from Audible, send a POST request to `/api/btt` with the `bookTitle` parameter.
 
 To download and transcribe an MP3 file, send a POST request to `/api/btt` with the `mp3Url` parameter.
