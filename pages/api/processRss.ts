@@ -1,8 +1,8 @@
-import { processFile } from '../../utils/utils';
 import Parser from 'rss-parser';
 import axios from 'axios';
 import fs from 'fs';
 import path, { resolve } from 'path';
+import { processFile } from '../../utils/utils';
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
@@ -12,34 +12,50 @@ export default async function handler(req, res) {
         const parser = new Parser();
         const feed = await parser.parseURL(rssUrl);
 
-        const item = feed.items.find(item => {
-            const words = item.title.split(' ');
-            return words.includes(searchPhrase);
-        });
+        const items = feed.items.filter(item => (" " + item.title + " ").includes(" " + searchPhrase + " "));
 
-        if (item && item.enclosure && item.enclosure.url) {
-            const mp3Url = item.enclosure.url;
-            const fileName = mp3Url.split('/').pop().split('.')[0];
-            const pathToFile = resolve(process.cwd(), './public/audio', `${fileName}.mp3`);
-            const finalJsonFolder = path.resolve('./public/json', fileName);
+        if (items.length > 0) {
+            const protocol = req.headers['x-forwarded-proto'] || 'http';
+            const host = req.headers['host'];
+            const baseUrl = `${protocol}://${host}`;
 
-            const response = await axios.get(mp3Url, { responseType: 'stream' });
-            const writer = fs.createWriteStream(pathToFile);
-            response.data.pipe(writer);
+            if (items.length === 1) {
+                const item = items[0];
+                const mp3Url = item.enclosure ? item.enclosure.url : null;
+                const fileName = mp3Url ? mp3Url.split('/').pop().split('.')[0] : null;
+                const pathToFile = fileName ? resolve(process.cwd(), './public/audio', `${fileName}.mp3`) : null;
+                const finalJsonFolder = fileName ? path.resolve('./public/json', fileName) : null;
 
-            await new Promise((resolve, reject) => {
-                writer.on('finish', resolve);
-                writer.on('error', reject);
-            });
+                res.status(200).json({
+                    mp3Url: fileName ? `${baseUrl}/audio/${fileName}.mp3` : null,
+                    jsonUrl: fileName ? `${baseUrl}/json/${fileName}/${fileName}.json` : null
+                });
 
-            if (!fs.existsSync(finalJsonFolder)) {
-                fs.mkdirSync(finalJsonFolder);
+                if (mp3Url && pathToFile && finalJsonFolder) {
+                    try {
+                        const response = await axios.get(mp3Url, { responseType: 'stream' });
+                        const writer = fs.createWriteStream(pathToFile);
+                        response.data.pipe(writer);
+
+                        await new Promise((resolve, reject) => {
+                            writer.on('finish', resolve);
+                            writer.on('error', reject);
+                        });
+
+                        if (!fs.existsSync(finalJsonFolder)) {
+                            fs.mkdirSync(finalJsonFolder);
+                        }
+                        await processFile(pathToFile, finalJsonFolder);
+                    } catch (error) {
+                        console.error(`Error during download: ${error}`);
+                    }
+                }
+            } else {
+                const results = items.map(item => ({ title: item.title }));
+                res.status(200).json(results);
             }
-            await processFile(pathToFile, finalJsonFolder);
-
-            res.status(200).json({ message: 'Processing completed' });
         } else {
-            res.status(404).json({ error: 'No matching item found in the RSS feed' });
+            res.status(404).json({ error: 'No matching items found in the RSS feed' });
         }
     } else {
         res.status(405).json({ message: 'Method not allowed' });

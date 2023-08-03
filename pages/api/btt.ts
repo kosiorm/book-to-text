@@ -1,8 +1,6 @@
-import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path, { resolve } from 'path';
 import axios from 'axios';
-import { exec, execSync } from 'child_process';
 import { processFile, downloadBook, convertAndUploadAAX } from '../../utils/utils'; // Add this line
 
 const email = process.env.EMAIL;
@@ -19,13 +17,12 @@ export default async function handler(req, res) {
         const baseUrl = `${protocol}://${host}`;
 
         if (mp3Url) {
-            // If an MP3 URL is provided, download it, save it as an MP3 file, and process it with whisperx
+
             const fileName = mp3Url.split('/').pop().split('.')[0];
             const pathToFile = resolve(process.cwd(), './public/audio', `${fileName}.mp3`);
             const finalJsonFolder = path.resolve('./public/json', fileName);
             const jsonUrl = `${baseUrl}/json/${fileName}/${fileName}.json`;
 
-            // Return the links to the MP3 and JSON files immediately
             res.status(200).json({ mp3Url: `${baseUrl}/audio/${fileName}.mp3`, jsonUrl });
 
             try {
@@ -46,7 +43,7 @@ export default async function handler(req, res) {
                 console.error(`Error during download: ${error}`);
             }
         }  else if (bookTitle) {
-        // If a book title is provided, perform the full process
+
         const fileName = bookTitle.replace(/ /g, '_');
         const aarPath = resolve(process.cwd(), './public/aar', `${fileName}.aax`);
         const mp3Url = `${baseUrl}/audio/${fileName}.mp3`;

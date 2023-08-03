@@ -55,7 +55,6 @@ export default async function handler(req, res) {
             const fileName = bookTitle.replace(/ /g, '_');
             const aarPath = resolve(process.cwd(), './public/aar', `${fileName}.aax`);
 
-            // Get the browser and page from downloadBook
             const { browser, page } = await downloadBook(email, password, bookTitle, aarPath, () => {});
             if (fs.existsSync(aarPath)) {
                 const key = await runFfprobe(aarPath);

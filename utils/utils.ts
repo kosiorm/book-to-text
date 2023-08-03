@@ -1,4 +1,3 @@
-// utils.ts
 import puppeteer from 'puppeteer';
 import { exec, execSync } from 'child_process';
 import fs from 'fs';
@@ -16,7 +15,6 @@ export async function processFile(pathToFile: string, finalJsonFolder: string) {
     }
 }
 
-// utils.ts
 export async function downloadBook(email: string, password: string, bookTitle: string, aarPath: string, onDownloadFinish) {
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
@@ -28,7 +26,6 @@ export async function downloadBook(email: string, password: string, bookTitle: s
     }
 
 
-    // Intercept network requests
     await page.setRequestInterception(true);
     page.on('request', async (interceptedRequest) => {
         if (interceptedRequest.url().includes('download?asin=')) {
@@ -59,14 +56,12 @@ export async function downloadBook(email: string, password: string, bookTitle: s
     await page.goto('https://www.audible.com/sign-in');
     await page.type('#ap_email', email);
 
-    // Check if the #continue button exists
     const continueButton = await page.$('#continue');
     if (continueButton) {
         await continueButton.click();
         await page.waitForNavigation({ waitUntil: 'networkidle0' });
         await page.type('#ap_password', password);
     } else {
-        // If the #continue button doesn't exist, try to find and click the #signInSubmit button
         await page.type('#ap_password', password);
         const signInButton = await page.$('#signInSubmit');
         if (signInButton) {
@@ -105,7 +100,6 @@ export async function downloadBook(email: string, password: string, bookTitle: s
         }
     }
 
-    // Return the browser and page for further use
     return { browser, page };
 }
 
