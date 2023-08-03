@@ -12,7 +12,10 @@ export default async function handler(req, res) {
         const parser = new Parser();
         const feed = await parser.parseURL(rssUrl);
 
-        const item = feed.items.find(item => item.title.includes(searchPhrase));
+        const item = feed.items.find(item => {
+            const words = item.title.split(' ');
+            return words.includes(searchPhrase);
+        });
 
         if (item && item.enclosure && item.enclosure.url) {
             const mp3Url = item.enclosure.url;
