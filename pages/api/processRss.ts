@@ -1,13 +1,11 @@
 import Parser from 'rss-parser';
-import axios from 'axios';
-import fs from 'fs';
 import path, { resolve } from 'path';
-import { processFile } from '../../utils/utils';
+import { downloadFile, processDownloadedFile } from '../../utils/utils';
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const searchPhrase = req.body.searchPhrase;
-        const rssUrl = req.body.rssUrl; // Get the RSS feed URL from the request
+        const rssUrl = req.body.rssUrl;
 
         const parser = new Parser();
         const feed = await parser.parseURL(rssUrl);
@@ -33,19 +31,8 @@ export default async function handler(req, res) {
 
                 if (mp3Url && pathToFile && finalJsonFolder) {
                     try {
-                        const response = await axios.get(mp3Url, { responseType: 'stream' });
-                        const writer = fs.createWriteStream(pathToFile);
-                        response.data.pipe(writer);
-
-                        await new Promise((resolve, reject) => {
-                            writer.on('finish', resolve);
-                            writer.on('error', reject);
-                        });
-
-                        if (!fs.existsSync(finalJsonFolder)) {
-                            fs.mkdirSync(finalJsonFolder);
-                        }
-                        await processFile(pathToFile, finalJsonFolder);
+                        await downloadFile(mp3Url, pathToFile);
+                        await processDownloadedFile(pathToFile, finalJsonFolder);
                     } catch (error) {
                         console.error(`Error during download: ${error}`);
                     }

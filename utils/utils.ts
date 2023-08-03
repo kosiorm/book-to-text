@@ -121,3 +121,21 @@ export async function convertAndUploadAAX(aarPath, fileName, baseUrl, activation
         console.error(`Error stack: ${error.stack}`);
     }
 }
+
+export async function downloadFile(url: string, pathToFile: string) {
+    const response = await axios.get(url, { responseType: 'stream' });
+    const writer = fs.createWriteStream(pathToFile);
+    response.data.pipe(writer);
+
+    return new Promise((resolve, reject) => {
+        writer.on('finish', resolve);
+        writer.on('error', reject);
+    });
+}
+
+export async function processDownloadedFile(pathToFile: string, finalJsonFolder: string) {
+    if (!fs.existsSync(finalJsonFolder)) {
+        fs.mkdirSync(finalJsonFolder);
+    }
+    return processFile(pathToFile, finalJsonFolder);
+}
