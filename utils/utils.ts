@@ -5,7 +5,7 @@ import path, { resolve } from 'path';
 import axios from 'axios';
 
 export async function processFile(pathToFile: string, finalJsonFolder: string) {
-    const command = `whisperx ${pathToFile} --model large-v2 --align_model WAV2VEC2_ASR_LARGE_LV60K_960H --batch_size 8 --compute_type float32 --output_dir  ${finalJsonFolder}`;
+    const command = `whisperx ${pathToFile} --model large-v2 --align_model WAV2VEC2_ASR_LARGE_LV60K_960H --batch_size 8 --output_dir  ${finalJsonFolder}`;
     try {
         const stdout = execSync(command);
         return stdout;
