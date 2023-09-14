@@ -5,17 +5,21 @@ import path, { resolve } from 'path';
 import axios from 'axios';
 
 export async function processFile(pathToFile: string, finalJsonFolder: string) {
-    const command = `whisperx ${pathToFile} --model large-v2 --align_model WAV2VEC2_ASR_LARGE_LV60K_960H --batch_size 8 --output_dir  ${finalJsonFolder}`;
+    const command = `whisperx ${pathToFile} --model large-v2 --align_model WAV2VEC2_ASR_LARGE_LV60K_960H --batch_size 8 --compute_type float32 --output_dir  ${finalJsonFolder}`;
     try {
         const stdout = execSync(command);
         return stdout;
     } catch (error) {
-        console.error(`Error during processing: ${error.message}`);
-        console.error(`Error stack: ${error.stack}`);
+        if (error instanceof Error) {
+            console.error(`Error during processing: ${error.message}`);
+            console.error(`Error stack: ${error.stack}`);
+        } else {
+            console.error(`Error during processing: ${error}`);
+        }
     }
 }
 
-export async function downloadBook(email: string, password: string, bookTitle: string, aarPath: string, onDownloadFinish) {
+export async function downloadBook(email: string, password: string, bookTitle: string, aarPath: string, onDownloadFinish: () => void) {
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
 
@@ -24,7 +28,6 @@ export async function downloadBook(email: string, password: string, bookTitle: s
         await onDownloadFinish();
         return { browser, page };
     }
-
 
     await page.setRequestInterception(true);
     page.on('request', async (interceptedRequest) => {
@@ -84,7 +87,7 @@ export async function downloadBook(email: string, password: string, bookTitle: s
     const bookElements = await page.$$('.adbl-library-content-row');
     const bookElement = bookElements.find(async (el) => {
         const textContent = await page.evaluate(el => el.textContent, el);
-        return textContent.includes(bookTitle);
+        return textContent ? textContent.includes(bookTitle) : false;
     });
 
     if (bookElement) {
@@ -93,17 +96,18 @@ export async function downloadBook(email: string, password: string, bookTitle: s
 
         if (downloadButton) {
             const boundingBox = await downloadButton.boundingBox();
-            await page.evaluate((x, y) => {
-                window.scrollBy(x, y);
-            }, boundingBox.x, boundingBox.y);
-            await downloadButton.click();
+            if (boundingBox) {
+                await page.evaluate((x, y) => {
+                    window.scrollBy(x, y);
+                }, boundingBox.x, boundingBox.y);
+                await downloadButton.click();
+            }
         }
     }
-
     return { browser, page };
 }
 
-export async function convertAndUploadAAX(aarPath, fileName, baseUrl, activationBytes) {
+export async function convertAndUploadAAX(aarPath: string, fileName: string, baseUrl: string, activationBytes: string) {
     const mp3Path = resolve(process.cwd(), './public/audio', `${fileName}.mp3`);
     const command = `ffmpeg -y -activation_bytes ${activationBytes} -i "${aarPath}" "${mp3Path}"`;
 
@@ -117,8 +121,12 @@ export async function convertAndUploadAAX(aarPath, fileName, baseUrl, activation
         }
         await processFile(pathToFile, finalJsonFolder);
     } catch (error) {
-        console.error(`Error during conversion: ${error.message}`);
-        console.error(`Error stack: ${error.stack}`);
+        if (error instanceof Error) {
+            console.error(`Error during conversion: ${error.message}`);
+            console.error(`Error stack: ${error.stack}`);
+        } else {
+            console.error(`Error during conversion: ${error}`);
+        }
     }
 }
 
