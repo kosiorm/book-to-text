@@ -125,6 +125,7 @@ export async function convertAndUploadAAX(aarPath: string, fileName: string, bas
     const command = `ffmpeg -y -activation_bytes ${activationBytes} -i "${aarPath}" "${mp3Path}"`;
 
     try {
+        console.log('Running ffmpeg command:', command);
         execSync(command);
         console.log('Conversion completed successfully');
         const pathToFile = mp3Path;
@@ -134,12 +135,7 @@ export async function convertAndUploadAAX(aarPath: string, fileName: string, bas
         }
         await processFile(pathToFile, finalJsonFolder);
     } catch (error) {
-        if (error instanceof Error) {
-            console.error(`Error during conversion: ${error.message}`);
-            console.error(`Error stack: ${error.stack}`);
-        } else {
-            console.error(`Error during conversion: ${error}`);
-        }
+        console.error(`Error during conversion: ${error}`);
     }
 }
 

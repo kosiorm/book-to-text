@@ -11,8 +11,8 @@ const activationBytes = process.env.ACTIVATION_BYTES;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'GET') {
-      const bookTitle = req.query.bookTitle as string | undefined;
-      const mp3Url = req.query.mp3Url as string | undefined;
+        const bookTitle = req.query.bookTitle as string | undefined;
+        const mp3Url = req.query.mp3Url as string | undefined;
 
         const protocol = req.headers['x-forwarded-proto'] || 'http';
         const host = req.headers['host'];
@@ -48,10 +48,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             res.status(200).json({ mp3Url, jsonUrl });
 
-            const { browser } = await downloadBook(email, password, bookTitle, aarPath, async () => {
+            if (fs.existsSync(aarPath)) {
+                console.log('Using local AAX file for testing');
+                console.log('Starting conversion...');
                 await convertAndUploadAAX(aarPath, fileName, baseUrl, activationBytes);
-                await browser.close();
-            });
+                console.log('Conversion finished');
+            } else {
+                try {
+                    const { browser } = await downloadBook(email, password, bookTitle, aarPath, async () => {
+                        console.log('Starting conversion...');
+                        await convertAndUploadAAX(aarPath, fileName, baseUrl, activationBytes);
+                        console.log('Conversion finished');
+                        await browser.close();
+                    });
+                } catch (error) {
+                    res.status(500).json({ error: error.message });
+                }
+            }
         } else {
             res.status(400).json({ error: 'Either bookTitle or mp3Url is required' });
         }
