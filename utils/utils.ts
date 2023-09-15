@@ -5,7 +5,8 @@ import path, { resolve } from 'path';
 import axios from 'axios';
 
 export async function processFile(pathToFile: string, finalJsonFolder: string) {
-    const command = `whisperx ${pathToFile} --model large-v2 --align_model WAV2VEC2_ASR_LARGE_LV60K_960H --batch_size 8 --compute_type float32 --output_dir  ${finalJsonFolder}`;
+    const condaEnvName = 'myenv';
+    const command = `conda run -n ${condaEnvName} whisperx ${pathToFile} --model large-v2 --align_model WAV2VEC2_ASR_LARGE_LV60K_960H --batch_size 8 --compute_type float32 --output_dir  ${finalJsonFolder}`;
     try {
         const stdout = execSync(command);
         return stdout;
@@ -18,6 +19,7 @@ export async function processFile(pathToFile: string, finalJsonFolder: string) {
         }
     }
 }
+
 
 export async function downloadBook(email: string, password: string, bookTitle: string, aarPath: string, onDownloadFinish: () => void) {
     const browser = await puppeteer.launch({ headless: false });
@@ -57,24 +59,36 @@ export async function downloadBook(email: string, password: string, bookTitle: s
     });
 
     await page.goto('https://www.audible.com/sign-in');
-    await page.type('#ap_email', email);
+
+    // Wait for the email input field to appear
+    await page.waitForSelector('#ap_email');
+    await page.type('#ap_email', email, { delay: 100 }); // 100ms delay between key presses
+    
+    // Wait for the password input field to appear
+    await page.waitForSelector('#ap_password');
+    await page.type('#ap_password', password, { delay: 100 }); // 100ms delay between key presses
 
     const continueButton = await page.$('#continue');
     if (continueButton) {
         await continueButton.click();
         await page.waitForNavigation({ waitUntil: 'networkidle0' });
-        await page.type('#ap_password', password);
     } else {
-        await page.type('#ap_password', password);
         const signInButton = await page.$('#signInSubmit');
         if (signInButton) {
             await signInButton.click();
         }
     }
 
-    await page.waitForNavigation({ waitUntil: 'networkidle0' });
+    // Wait for the "Library" button to appear
+    await page.waitForXPath('//*[@id="top-1"]/div/div/div/header/div[2]/div[1]/nav/span/ul/li[1]/a');
+    console.log('Login successful');
 
+    // Navigate to the library
     await page.goto('https://www.audible.com/library/titles');
+
+    // Wait for the library title to appear
+    await page.waitForXPath('//*[@id="center-1"]/div[2]/div/div[1]/h1');
+    console.log('Library page loaded');
 
     try {
         await page.type('#lib-search', bookTitle);

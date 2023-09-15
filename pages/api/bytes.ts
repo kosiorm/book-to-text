@@ -34,7 +34,7 @@ async function runRcrack(key: string) {
     } else {
         // Linux
         rcrackPath = path.resolve(process.cwd(), './public/tables-master/run/rcrack');
-        command = `${rcrackPath} . -h ${key}`;
+        command = `wine ${rcrackPath} . -h ${key}`;
     }
 
     return new Promise((resolve, reject) => {
