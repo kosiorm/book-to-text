@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": ". ~/.bashrc && next dev",
+    "dev": "next dev",
     "build": "next build",
-    "start": ". ~/.bashrc && next start dev",
+    "start": "next start dev",
     "lint": "next lint"
   },
   "dependencies": {

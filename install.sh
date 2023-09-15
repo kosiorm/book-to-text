@@ -2,26 +2,25 @@
 
 # Function to handle errors
 handle_error() {
-    case $1 in
-        20) echo "Error occurred while updating package lists.";;
-        22) echo "Error occurred while installing FFmpeg.";;
-        25) echo "Error occurred while installing Node.js and npm using NVM.";;
-        28) echo "Error occurred while sourcing ~/.bashrc.";;
-        29) echo "Error occurred while installing Node.js version 16.20.2.";;
-        32) echo "Error occurred while installing Git.";;
-        34) echo "Error occurred while cloning the repository.";;
-        36) echo "Error occurred while navigating to the project directory.";;
-        38) echo "Error occurred while installing project dependencies.";;
-        41) echo "Error occurred while installing Conda.";;
-        43) echo "Error occurred while running the Miniconda installation script.";;
-        45) echo "Error occurred while removing the Miniconda installation script.";;
-        48) echo "Error occurred while adding Conda to PATH.";;
-        50) echo "Error occurred while sourcing ~/.bashrc.";;
-        52) echo "Error occurred while updating Conda.";;
-        54) echo "Error occurred while creating a Python 3.10 environment.";;
-        # Add more error messages as needed
-    esac
-    exit $1
+  case $1 in
+    20) echo "Error occurred while updating package lists.";;
+    22) echo "Error occurred while installing FFmpeg.";;
+    18) echo "Error occurred while installing curl.";;
+    38) echo "Error occurred while installing project dependencies.";;
+    41) echo "Error occurred while downloading the Miniconda installation script.";;
+    43) echo "Error occurred while running the Miniconda installation script.";;
+    45) echo "Error occurred while removing the Miniconda installation script.";;
+    48) echo "Error occurred while adding Conda to PATH.";;
+    50) echo "Error occurred while activating the Conda base environment.";;
+    52) echo "Error occurred while updating Conda.";;
+    54) echo "Error occurred while creating a Python 3.10 environment.";;
+    56) echo "Error occurred while activating the Python environment.";;
+    58) echo "Error occurred while installing PyTorch 2.0, Torchaudio 2.0, and PyTorch CUDA 11.8.";;
+    60) echo "Error occurred while installing whisperx.";;
+    61) echo "Error occurred while installing Node.js and npm.";;
+    # Add more error messages as needed
+  esac
+  exit $1
 }
 
 # Update package lists
@@ -30,19 +29,18 @@ sudo apt-get update || handle_error 20
 # Install FFmpeg
 sudo apt-get install -y ffmpeg || handle_error 22
 
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash || exit 1
+# Install curl
+sudo apt-get install -y curl || handle_error 18
+
+# Download and install NVM
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash || handle_error 61
+
+# Load NVM
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-nvm install 16.20.2 || exit 1
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-# Install Git
-sudo apt-get install -y git || handle_error 32
-
-# Clone the repository
-git clone https://github.com/ator88/book-to-text.git || handle_error 34
-
-# Navigate to the project directory
-cd book-to-text || handle_error 36
+# Install the latest LTS version of Node.js
+nvm install --lts || handle_error 61
 
 # Install project dependencies
 npm install || handle_error 38
@@ -72,9 +70,8 @@ conda create -n btt python=3.10 -y || handle_error 54
 # Activate the Python environment
 conda activate btt || handle_error 56
 
-# Install PyTorch 2.0, Torchaudio 2.0 and PyTorch CUDA 11.8
-conda install pytorch==2.0.0 torchaudio==2.0.0 pytorch-cuda=11.8 -c pytorch -c nvidia || handle_error 58
+# Install PyTorch 2.0, Torchaudio 2.0, and PyTorch CUDA 11.8
+conda install -c pytorch -c nvidia pytorch=2.0.0 torchaudio=2.0.0 torchvision -y || handle_error 58
 
 # Install whisperx
 pip install git+https://github.com/m-bain/whisperx.git || handle_error 60
-
