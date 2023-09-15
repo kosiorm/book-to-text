@@ -70,21 +70,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const fileName = bookTitle.replace(/ /g, '_');
         const aarPath = resolve(process.cwd(), './public/aar', `${fileName}.aax`);
 
-        const { browser, page } = await downloadBook(email, password, bookTitle, aarPath, () => {});
-        if (fs.existsSync(aarPath)) {
-            const key = await runFfprobe(aarPath);
-            if (key) {
-                await runRcrack(key as string);
-                // Close the browser after the download and extraction processes are complete
-                await browser.close();
-                res.write('Extracting activation bytes complete');
-                res.end();
-            } else {
-                res.status(500).json({ error: 'Key extraction failed' });
-                return;
-            }
-        } else {
-            res.status(400).json({ error: 'bookTitle is required' });
+        try {
+            const { browser, page } = await downloadBook(email, password, bookTitle, aarPath, async () => {
+                const key = await runFfprobe(aarPath);
+                if (key) {
+                    await runRcrack(key as string);
+                    // Close the browser after the download and extraction processes are complete
+                    await browser.close();
+                    res.write('Extracting activation bytes complete');
+                    res.end();
+                } else {
+                    res.status(500).json({ error: 'Key extraction failed' });
+                    return;
+                }
+            });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
         }
     } else {
         res.status(405).json({ message: 'Method not allowed' });

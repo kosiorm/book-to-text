@@ -3,7 +3,6 @@ import fs from 'fs';
 import path, { resolve } from 'path';
 import { downloadFile, processDownloadedFile, downloadBook, convertAndUploadAAX } from '../../utils/utils';
 
-
 process.env.PATH = process.env.PATH + ':/path/to/whisperx';
 
 const email = process.env.EMAIL;

@@ -20,7 +20,7 @@ export async function processFile(pathToFile: string, finalJsonFolder: string) {
     }
 }
 
-export async function downloadBook(email: string, password: string, bookTitle: string, aarPath: string, onDownloadFinish: () => void) {
+export async function downloadBook(email: string, password: string, bookTitle: string, aarPath: string, onDownloadFinish: () => Promise<void>) {
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
 
@@ -29,7 +29,6 @@ export async function downloadBook(email: string, password: string, bookTitle: s
 
     if (fs.existsSync(aarPath)) {
         console.log('Using local AAX file for testing');
-        await onDownloadFinish();
         return { browser, page };
     }
 
@@ -47,13 +46,17 @@ export async function downloadBook(email: string, password: string, bookTitle: s
             const writer = fs.createWriteStream(aarPath);
             response.data.pipe(writer);
 
-            writer.on('close', async () => {
-                console.log('Download completed');
-                await onDownloadFinish();
-            });
-
-            writer.on('error', (error) => {
-                console.error(`Error during download: ${error}`);
+            return new Promise((resolve, reject) => {
+                writer.on('close', async () => {
+                    console.log('Download completed');
+                    await onDownloadFinish();
+                    resolve();
+                });
+        
+                writer.on('error', (error) => {
+                    console.error(`Error during download: ${error}`);
+                    reject(error);
+                });
             });
         } else {
             interceptedRequest.continue();
