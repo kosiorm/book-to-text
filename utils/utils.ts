@@ -5,7 +5,7 @@ import path, { resolve } from 'path';
 import axios from 'axios';
 
 export async function processFile(pathToFile: string, finalJsonFolder: string) {
-    const condaEnvName = 'myenv';
+    const condaEnvName = 'btt';
     const command = `conda run -n ${condaEnvName} whisperx ${pathToFile} --model large-v2 --align_model WAV2VEC2_ASR_LARGE_LV60K_960H --batch_size 8 --compute_type float32 --output_dir  ${finalJsonFolder}`;
     try {
         const stdout = execSync(command);
@@ -20,10 +20,12 @@ export async function processFile(pathToFile: string, finalJsonFolder: string) {
     }
 }
 
-
 export async function downloadBook(email: string, password: string, bookTitle: string, aarPath: string, onDownloadFinish: () => void) {
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
+
+    // Set the viewport size
+    await page.setViewport({ width: 1280, height: 800 });
 
     if (fs.existsSync(aarPath)) {
         console.log('Using local AAX file for testing');
@@ -71,24 +73,18 @@ export async function downloadBook(email: string, password: string, bookTitle: s
     const continueButton = await page.$('#continue');
     if (continueButton) {
         await continueButton.click();
-        await page.waitForNavigation({ waitUntil: 'networkidle0' });
+        await page.waitForTimeout(3000); // wait for 3 seconds
     } else {
         const signInButton = await page.$('#signInSubmit');
         if (signInButton) {
             await signInButton.click();
+            await page.waitForTimeout(3000); // wait for 3 seconds
         }
     }
 
-    // Wait for the "Library" button to appear
-    await page.waitForXPath('//*[@id="top-1"]/div/div/div/header/div[2]/div[1]/nav/span/ul/li[1]/a');
-    console.log('Login successful');
-
     // Navigate to the library
     await page.goto('https://www.audible.com/library/titles');
-
-    // Wait for the library title to appear
-    await page.waitForXPath('//*[@id="center-1"]/div[2]/div/div[1]/h1');
-    console.log('Library page loaded');
+    await page.waitForTimeout(3000); // wait for 3 seconds
 
     try {
         await page.type('#lib-search', bookTitle);

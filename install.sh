@@ -67,7 +67,9 @@ bash Miniconda3-latest-Linux-x86_64.sh -b -f -p $HOME/miniconda || exit 1
 rm Miniconda3-latest-Linux-x86_64.sh || exit 1
 
 # Add Conda to PATH
-export PATH="$HOME/miniconda/bin:$PATH"
+echo 'export PATH="$HOME/miniconda/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc || exit 1
+
 conda update -n base -c defaults conda -y || exit 1
 
 # Create a Python 3.10 environment
@@ -76,10 +78,10 @@ conda create -n btt python=3.10 -y || exit 1
 # Activate the Python environment
 conda activate btt || exit 1
 
-# Install PyTorch 2.0 and Torchaudio 2.0
-pip install torch==2.0.0 torchaudio==2.0.0 || exit 1
+# Install PyTorch 2.0, Torchaudio 2.0 and PyTorch CUDA 11.8
+conda install pytorch==2.0.0 torchaudio==2.0.0 pytorch-cuda=11.8 -c pytorch -c nvidia || exit 1
 
 # Install whisperx
-pip install whisperx || exit 1
+pip install git+https://github.com/m-bain/whisperx.git || exit 1
 
 # Replace yourusername and yourrepository with your actual GitHub username and repository name.
