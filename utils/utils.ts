@@ -87,15 +87,14 @@ export async function downloadBook(email: string, password: string, bookTitle: s
 
     // Navigate to the library
     await page.goto('https://www.audible.com/library/titles');
-    await page.waitForTimeout(3000); // wait for 3 seconds
-
-    try {
-        await page.type('#lib-search', bookTitle);
-        await page.keyboard.press('Enter');
-        await page.waitForSelector('.adbl-library-content-row');
-    } catch (error) {
-        console.error(`Error during page interaction: ${error}`);
-    }
+try {
+    await page.waitForSelector('#lib-search');
+    await page.type('#lib-search', bookTitle);
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.adbl-library-content-row');
+} catch (error) {
+    console.error(`Error during page interaction: ${error}`);
+}
 
     const bookElements = await page.$$('.adbl-library-content-row');
     const bookElement = bookElements.find(async (el) => {

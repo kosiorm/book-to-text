@@ -19,69 +19,62 @@ handle_error() {
         50) echo "Error occurred while sourcing ~/.bashrc.";;
         52) echo "Error occurred while updating Conda.";;
         54) echo "Error occurred while creating a Python 3.10 environment.";;
-        56) echo "Error occurred while activating the Python environment.";;
-        58) echo "Error occurred while installing PyTorch 2.0 and Torchaudio 2.0.";;
-        60) echo "Error occurred while installing whisperx.";;
-        *) echo "An unknown error occurred.";;
+        # Add more error messages as needed
     esac
-    echo "Line $1 exited with status: $2"
-    exit $2
+    exit $1
 }
 
-# Trap ERR signal and call our error handler
-trap 'handle_error $LINENO $?' ERR
-
 # Update package lists
-sudo apt-get update || exit 1
+sudo apt-get update || handle_error 20
 
 # Install FFmpeg
-sudo apt-get install ffmpeg -y || exit 1
+sudo apt-get install -y ffmpeg || handle_error 22
 
-# Install curl
-sudo apt-get install curl -y || exit 1
-
-# Install Node.js and npm using NVM
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash || exit 1
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 nvm install 16.20.2 || exit 1
 
 # Install Git
-sudo apt-get install git -y || exit 1
+sudo apt-get install -y git || handle_error 32
 
-# Clone your repository
-git clone https://github.com/ator88/book-to-text.git || exit 1
+# Clone the repository
+git clone https://github.com/ator88/book-to-text.git || handle_error 34
 
-# Navigate to your project directory
-cd book-to-text || exit 1
+# Navigate to the project directory
+cd book-to-text || handle_error 36
 
-# Install your project's dependencies
-npm install || exit 1
+# Install project dependencies
+npm install || handle_error 38
 
-sudo apt-get update -y || exit 1
-sudo apt-get install -y wine || exit 1
+# Download the Miniconda installation script
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh || handle_error 41
 
-# Install Conda
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh || exit 1
-bash Miniconda3-latest-Linux-x86_64.sh -b -f -p $HOME/miniconda || exit 1
-rm Miniconda3-latest-Linux-x86_64.sh || exit 1
+# Run the Miniconda installation script
+bash Miniconda3-latest-Linux-x86_64.sh -b -u -p $HOME/miniconda || handle_error 43
+
+# Remove the Miniconda installation script
+rm Miniconda3-latest-Linux-x86_64.sh || handle_error 45
 
 # Add Conda to PATH
 echo 'export PATH="$HOME/miniconda/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc || exit 1
+. ~/.bashrc || handle_error 48
 
-conda update -n base -c defaults conda -y || exit 1
+# Activate the Conda base environment
+source $HOME/miniconda/bin/activate || handle_error 50
+
+# Update Conda
+conda update -n base -c defaults conda -y || handle_error 52
 
 # Create a Python 3.10 environment
-conda create -n btt python=3.10 -y || exit 1
+conda create -n btt python=3.10 -y || handle_error 54
 
 # Activate the Python environment
-conda activate btt || exit 1
+conda activate btt || handle_error 56
 
 # Install PyTorch 2.0, Torchaudio 2.0 and PyTorch CUDA 11.8
-conda install pytorch==2.0.0 torchaudio==2.0.0 pytorch-cuda=11.8 -c pytorch -c nvidia || exit 1
+conda install pytorch==2.0.0 torchaudio==2.0.0 pytorch-cuda=11.8 -c pytorch -c nvidia || handle_error 58
 
 # Install whisperx
-pip install git+https://github.com/m-bain/whisperx.git || exit 1
+pip install git+https://github.com/m-bain/whisperx.git || handle_error 60
 
-# Replace yourusername and yourrepository with your actual GitHub username and repository name.
