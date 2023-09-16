@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 handle_error() {
   case $1 in
     20) echo "Error occurred while updating package lists.";;
@@ -17,16 +18,16 @@ handle_error() {
     58) echo "Error occurred while installing PyTorch 2.0, Torchaudio 2.0, and PyTorch CUDA 11.8.";;
     60) echo "Error occurred while installing whisperx.";;
     61) echo "Error occurred while installing Node.js and npm.";;
+
   esac
   exit $1
 }
 
+apt-get update || handle_error 20
 
-sudo apt-get update || handle_error 20
+apt-get install -y ffmpeg || handle_error 22
 
-sudo apt-get install -y ffmpeg || handle_error 22
-
-sudo apt-get install -y curl || handle_error 18
+apt-get install -y curl || handle_error 18
 
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash || handle_error 61
 

@@ -13,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return;
         }
 
-        // Prepend '#' to searchPhrase if it's a number
+    
         if (!isNaN(Number(searchPhrase))) {
             searchPhrase = '#' + searchPhrase;
         }

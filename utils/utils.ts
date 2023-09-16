@@ -24,7 +24,7 @@ export async function downloadBook(email: string, password: string, bookTitle: s
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
 
-    // Set the viewport size
+ 
     await page.setViewport({ width: 1280, height: 800 });
 
     if (fs.existsSync(aarPath)) {
@@ -65,27 +65,26 @@ export async function downloadBook(email: string, password: string, bookTitle: s
 
     await page.goto('https://www.audible.com/sign-in');
 
-    // Wait for the email input field to appear
+ 
     await page.waitForSelector('#ap_email');
-    await page.type('#ap_email', email, { delay: 100 }); // 100ms delay between key presses
+    await page.type('#ap_email', email, { delay: 100 }); 
     
-    // Wait for the password input field to appear
+   
     await page.waitForSelector('#ap_password');
-    await page.type('#ap_password', password, { delay: 100 }); // 100ms delay between key presses
+    await page.type('#ap_password', password, { delay: 100 });
 
     const continueButton = await page.$('#continue');
     if (continueButton) {
         await continueButton.click();
-        await page.waitForTimeout(3000); // wait for 3 seconds
+        await page.waitForTimeout(3000); 
     } else {
         const signInButton = await page.$('#signInSubmit');
         if (signInButton) {
             await signInButton.click();
-            await page.waitForTimeout(3000); // wait for 3 seconds
+            await page.waitForTimeout(3000); 
         }
     }
 
-    // Navigate to the library
     await page.goto('https://www.audible.com/library/titles');
 try {
     await page.waitForSelector('#lib-search');
