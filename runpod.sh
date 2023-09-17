@@ -48,8 +48,6 @@ apt-get install -y libxcomposite1
 
 apt-get install -y libxdamage1
 
-apt-get install -y wine || handle_error 160
-
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash || handle_error 150
 
 export NVM_DIR="$HOME/.nvm"
