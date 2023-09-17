@@ -24,19 +24,19 @@ export async function processFile(pathToFile: string, finalJsonFolder: string) {
 }
 
 export async function downloadBook(email: string, password: string, bookTitle: string, aarPath: string, onDownloadFinish: () => Promise<void>) {
+    if (fs.existsSync(aarPath)) {
+        console.log('Using local AAX file for testing');
+        await onDownloadFinish();
+        return;
+    }
+
     const browser = await puppeteer.launch({
         headless: 'new',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
+    });
     const page = await browser.newPage();
 
- 
     await page.setViewport({ width: 1280, height: 800 });
-
-    if (fs.existsSync(aarPath)) {
-        console.log('Using local AAX file for testing');
-        return { browser, page };
-    }
 
     await page.setRequestInterception(true);
     page.on('request', async (interceptedRequest) => {
@@ -71,63 +71,62 @@ export async function downloadBook(email: string, password: string, bookTitle: s
 
     await page.goto('https://www.audible.com/sign-in'); 
 
-    
     let attempts = 0;
-while (attempts < 3) {
-    const captchaElement = await page.$('.a-row.a-text-center img');
+    while (attempts < 3) {
+        const captchaElement = await page.$('.a-row.a-text-center img');
 
-    if (captchaElement) {
-        const captchaImage = await captchaElement.screenshot({ encoding: 'base64' });
-        const captchaSolution = await solver.imageCaptcha(captchaImage);
-        const captchaSolutionUpperCase = captchaSolution.data.toUpperCase(); // convert the solution to uppercase
-        // Enter the captcha solution into the page
-        await page.evaluate((solution) => {
-            document.querySelector('#captchacharacters').value = solution;
-        }, captchaSolutionUpperCase); // use captchaSolutionUpperCase instead of captchaSolution.data
+        if (captchaElement) {
+            const captchaImage = await captchaElement.screenshot({ encoding: 'base64' });
+            const captchaSolution = await solver.imageCaptcha(captchaImage);
+            const captchaSolutionUpperCase = captchaSolution.data.toUpperCase(); // convert the solution to uppercase
+            // Enter the captcha solution into the page
+            await page.evaluate((solution) => {
+                document.querySelector('#captchacharacters').value = solution;
+            }, captchaSolutionUpperCase); // use captchaSolutionUpperCase instead of captchaSolution.data
 
-        // Wait for a moment before clicking the continue button
-        await page.waitForTimeout(1000); // wait for 1 second
+            // Wait for a moment before clicking the continue button
+            await page.waitForTimeout(1000); // wait for 1 second
 
-        // Click the continue button
-        await page.evaluate(() => {
-            document.querySelector('button[type="submit"].a-button-text').click();
-        });
+            // Click the continue button
+            await page.evaluate(() => {
+                document.querySelector('button[type="submit"].a-button-text').click();
+            });
 
-        attempts++;
+            attempts++;
 
-        // Wait for the page to load
-        await page.waitForTimeout(3000); // wait for 3 seconds
-    } else {
-        // If the captcha doesn't appear, proceed to the login page:
-        await page.waitForSelector('#ap_email');
-        await page.type('#ap_email', email, { delay: 100 });
-        await page.waitForSelector('#ap_password');
-        await page.type('#ap_password', password, { delay: 100 });
-        await page.click('#signInSubmit');
-        break;
+            // Wait for the page to load
+            await page.waitForTimeout(3000); // wait for 3 seconds
+        } else {
+            // If the captcha doesn't appear, proceed to the login page:
+            await page.waitForSelector('#ap_email');
+            await page.type('#ap_email', email, { delay: 100 });
+            await page.waitForSelector('#ap_password');
+            await page.type('#ap_password', password, { delay: 100 });
+            await page.click('#signInSubmit');
+            break;
+        }
     }
-}
 
-if (attempts === 3) {
-    throw new Error('Failed to solve captcha after 3 attempts');
-}
+    if (attempts === 3) {
+        throw new Error('Failed to solve captcha after 3 attempts');
+    }
 
-console.log('Login successful');
-await page.waitForNavigation({ url: 'https://www.audible.com/?loginAttempt=true' }); 
+    console.log('Login successful');
+    await page.waitForNavigation({ url: 'https://www.audible.com/?loginAttempt=true' }); 
 
-await Promise.all([
-    page.waitForNavigation(), 
-    page.goto('https://www.audible.com/library/titles'), 
-]);
+    await Promise.all([
+        page.waitForNavigation(), 
+        page.goto('https://www.audible.com/library/titles'), 
+    ]);
 
     try {
-    await page.waitForSelector('#lib-search');
-    await page.type('#lib-search', bookTitle);
-    await page.keyboard.press('Enter');
-    await page.waitForSelector('.adbl-library-content-row');
-} catch (error) {
-    console.error(`Error during page interaction: ${error}`);
-}
+        await page.waitForSelector('#lib-search');
+        await page.type('#lib-search', bookTitle);
+        await page.keyboard.press('Enter');
+        await page.waitForSelector('.adbl-library-content-row');
+    } catch (error) {
+        console.error(`Error during page interaction: ${error}`);
+    }
 
     const bookElements = await page.$$('.adbl-library-content-row');
     const bookElement = bookElements.find(async (el) => {
@@ -150,6 +149,7 @@ await Promise.all([
             }
         }
     }
+
     return { browser, page };
 }
 
