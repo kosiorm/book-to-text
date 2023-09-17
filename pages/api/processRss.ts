@@ -4,6 +4,7 @@ import { downloadFile, processDownloadedFile } from '../../utils/utils';
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+    console.log('Processing request...'); 
     if (req.method === 'GET') {
         let searchPhrase = req.query.searchPhrase as string | undefined;
         const rssUrl = req.query.rssUrl as string | undefined;
@@ -13,7 +14,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return;
         }
 
-    
         if (!isNaN(Number(searchPhrase))) {
             searchPhrase = '#' + searchPhrase;
         }
@@ -60,4 +60,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
         res.status(405).json({ message: 'Method not allowed' });
     }
+
+    console.log('Finished processing request.');
 }

@@ -29,6 +29,20 @@ apt-get install -y ffmpeg || handle_error 22
 
 apt-get install -y curl || handle_error 18
 
+apt-get install -y libatk1.0-0
+
+apt-get install -y libnss3
+
+apt-get install -y libatk-bridge2.0-0
+
+apt-get install -y libcups2
+
+apt-get install -y libxcomposite1
+
+apt-get install -y libxdamage1
+
+
+
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash || handle_error 61
 
 export NVM_DIR="$HOME/.nvm"

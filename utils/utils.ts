@@ -21,7 +21,10 @@ export async function processFile(pathToFile: string, finalJsonFolder: string) {
 }
 
 export async function downloadBook(email: string, password: string, bookTitle: string, aarPath: string, onDownloadFinish: () => Promise<void>) {
-    const browser = await puppeteer.launch({ headless: false });
+    const browser = await puppeteer.launch({
+        headless: 'new',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
     const page = await browser.newPage();
 
  

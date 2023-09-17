@@ -33,10 +33,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const finalJsonFolder = path.resolve('./public/json', fileName);
 
             res.status(200).json({ mp3Url: `${baseUrl}/audio/${fileName}.mp3`, jsonUrl: `${baseUrl}/json/${fileName}/${fileName}.json` });
+           
 
             try {
                 await downloadFile(mp3Url, pathToFile);
+                console.log('Starting transcription...');
                 await processDownloadedFile(pathToFile, finalJsonFolder);
+                console.log('Transcription completed successfully.');
             } catch (error) {
                 console.error(`Error during download: ${error}`);
             }
@@ -49,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             res.status(200).json({ mp3Url, jsonUrl });
 
             if (fs.existsSync(aarPath)) {
-                console.log('Using local AAX file for testing');
+                console.log('Using local AAX file ');
                 console.log('Starting conversion...');
                 await convertAndUploadAAX(aarPath, fileName, baseUrl, activationBytes);
                 console.log('Conversion finished');
@@ -62,7 +65,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         await browser.close();
                     });
                 } catch (error) {
-                    res.status(500).json({ error: error.message });
+                    console.error(error.message);
                 }
             }
         } else {

@@ -28,11 +28,11 @@ async function runRcrack(key: string) {
     let command: string;
 
     if (os.platform() === 'win32') {
-        // Windows
+      
         rcrackPath = path.resolve(process.cwd(), './public/tables-master/run/rcrack.exe');
         command = `${rcrackPath} . -h ${key}`;
     } else {
-        // Linux
+      
         rcrackPath = path.resolve(process.cwd(), './public/tables-master/run/rcrack');
         command = `wine ${rcrackPath} . -h ${key}`;
     }
@@ -75,7 +75,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 const key = await runFfprobe(aarPath);
                 if (key) {
                     await runRcrack(key as string);
-                    // Close the browser after the download and extraction processes are complete
                     await browser.close();
                     res.write('Extracting activation bytes complete');
                     res.end();
