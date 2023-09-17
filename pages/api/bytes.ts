@@ -30,6 +30,7 @@ async function runRcrack(key: string) {
     let command: string;
   
     if (os.platform() === 'win32') {
+<<<<<<< HEAD
       rcrackPath = path.resolve(process.cwd(), './public/tables-master/run/rcrack.exe');
       command = `${rcrackPath} . -h ${key}`;
     } else {
@@ -39,6 +40,19 @@ async function runRcrack(key: string) {
   
     return new Promise(async (resolve, reject) => {
         exec(command, async (error, stdout, stderr) => {
+=======
+      
+        rcrackPath = path.resolve(process.cwd(), './public/tables-master/run/rcrack.exe');
+        command = `${rcrackPath} . -h ${key}`;
+    } else {
+      
+        rcrackPath = path.resolve(process.cwd(), './public/tables-master/run/rcrack');
+        command = `wine ${rcrackPath} . -h ${key}`;
+    }
+
+    return new Promise((resolve, reject) => {
+        exec(command, (error, stdout, stderr) => {
+>>>>>>> parent of 94fea77 (wine)
             if (error) {
                 reject(error);
                 return;
@@ -90,7 +104,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     return;
                 }
             });
+<<<<<<< HEAD
             res.send('Success'); 
+=======
+>>>>>>> parent of 94fea77 (wine)
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
