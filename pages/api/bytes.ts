@@ -47,14 +47,14 @@ async function runRcrack(key: string) {
             const activationBytes = match ? match[1] : null;
 
             if (activationBytes) {
-                // Update the .env.local file if it exists
+                
                 const envFilePath = path.resolve(process.cwd(), '.env.local');
                 if (fs.existsSync(envFilePath)) {
                     let envFileContent = fs.readFileSync(envFilePath, 'utf8');
                     envFileContent = envFileContent.replace(/(ACTIVATION_BYTES=).*/, `$1${activationBytes}`);
                     fs.writeFileSync(envFilePath, envFileContent);
                 } else {
-                    // If .env.local doesn't exist, log the activation bytes to the terminal and send them to the browser
+                    
                     console.log(`Activation bytes: ${activationBytes}`);
                 }
             }
