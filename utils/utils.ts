@@ -34,8 +34,8 @@ export async function downloadBook(email: string, password: string, bookTitle: s
     await page.setViewport({ width: 1280, height: 800 });
 
     if (fs.existsSync(aarPath)) {
-        console.log('Using local AAX file for testing');
-        await onDownloadFinish();
+        console.log('Using local AAX file');
+        await onDownloadFinish(); 
         return { browser, page };
     }
 
