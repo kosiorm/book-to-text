@@ -23,6 +23,13 @@ handle_error() {
   exit $1
 }
 
+
+dpkg --add-architecture i386 || handle_error 170
+
+apt-get update || handle_error 10
+
+apt-get install -y wine32 || handle_error 180
+
 apt-get update || handle_error 10
 
 apt-get install -y ffmpeg || handle_error 20
