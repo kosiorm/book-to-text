@@ -17,16 +17,41 @@ handle_error() {
     58) echo "Error occurred while installing PyTorch 2.0, Torchaudio 2.0, and PyTorch CUDA 11.8.";;
     60) echo "Error occurred while installing whisperx.";;
     61) echo "Error occurred while installing Node.js and npm.";;
+    62) echo "Error occurred while installing libatk1.0-0.";;
+    63) echo "Error occurred while installing libnss3.";;
+    64) echo "Error occurred while installing libatk-bridge2.0-0.";;
+    65) echo "Error occurred while installing libcups2.";;
+    66) echo "Error occurred while installing libxcomposite1.";;
+    67) echo "Error occurred while installing libxdamage1.";;
+    68) echo "Error occurred while installing wine.";;
   esac
   exit $1
 }
+sudo dpkg --add-architecture i386 || handle_error 170
 
+sudo apt-get update || handle_error 20
+
+sudo apt-get install -y wine64 || handle_error 180
 
 sudo apt-get update || handle_error 20
 
 sudo apt-get install -y ffmpeg || handle_error 22
 
 sudo apt-get install -y curl || handle_error 18
+
+sudo apt-get install -y libatk1.0-0 || handle_error 62
+
+sudo apt-get install -y libnss3 || handle_error 63
+
+sudo apt-get install -y libatk-bridge2.0-0 || handle_error 64
+
+sudo apt-get install -y libcups2 || handle_error 65
+
+sudo apt-get install -y libxcomposite1 || handle_error 66
+
+sudo apt-get install -y libxdamage1 || handle_error 67
+
+sudo apt-get install -y wine || handle_error 68
 
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash || handle_error 61
 

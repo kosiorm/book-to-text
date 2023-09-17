@@ -28,14 +28,13 @@ async function runRcrack(key: string) {
     let command: string;
 
     if (os.platform() === 'win32') {
-      
         rcrackPath = path.resolve(process.cwd(), './public/tables-master/run/rcrack.exe');
         command = `${rcrackPath} . -h ${key}`;
     } else {
-      
         rcrackPath = path.resolve(process.cwd(), './public/tables-master/run/rcrack');
-        command = `wine ${rcrackPath} . -h ${key}`;
+        command = `WINEPREFIX=~/.wine64 WINEARCH=win64 wine ${rcrackPath} . -h ${key}`; // set WINEPREFIX and WINEARCH
     }
+
 
     return new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
@@ -83,6 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     return;
                 }
             });
+            res.send('Success'); // send a response indicating success
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
