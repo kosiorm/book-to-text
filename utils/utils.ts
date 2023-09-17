@@ -34,7 +34,8 @@ export async function downloadBook(email: string, password: string, bookTitle: s
     await page.setViewport({ width: 1280, height: 800 });
 
     if (fs.existsSync(aarPath)) {
-        console.log('Using local AAX file for testing');
+        console.log('Using local AAX file');
+        await onDownloadFinish(); 
         return { browser, page };
     }
 
@@ -56,6 +57,7 @@ export async function downloadBook(email: string, password: string, bookTitle: s
                 writer.on('close', async () => {
                     console.log('Download completed');
                     await onDownloadFinish();
+                    page.removeListener('request', handleRequest); 
                     resolve();
                 });
         
