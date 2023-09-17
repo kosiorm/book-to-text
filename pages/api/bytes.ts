@@ -30,18 +30,15 @@ async function runRcrack(key: string) {
     let command: string;
   
     if (os.platform() === 'win32') {
-      
         rcrackPath = path.resolve(process.cwd(), './public/tables-master/run/rcrack.exe');
         command = `${rcrackPath} . -h ${key}`;
     } else {
-      
         rcrackPath = path.resolve(process.cwd(), './public/tables-master/run/rcrack');
         command = `wine ${rcrackPath} . -h ${key}`;
     }
 
     return new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
->>>>>>> parent of 94fea77 (wine)
             if (error) {
                 reject(error);
                 return;
@@ -59,14 +56,13 @@ async function runRcrack(key: string) {
                 } else {
                     // If .env.local doesn't exist, log the activation bytes to the terminal and send them to the browser
                     console.log(`Activation bytes: ${activationBytes}`);
-                    res.write(`Activation bytes: ${activationBytes}`);
                 }
             }
 
             resolve(activationBytes);
-      });
+        });
     });
-  }
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'GET') {
