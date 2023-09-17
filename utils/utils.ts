@@ -36,6 +36,7 @@ export async function downloadBook(email: string, password: string, bookTitle: s
     });
     const page = await browser.newPage();
 
+
     await page.setViewport({ width: 1280, height: 800 });
 
     await page.setRequestInterception(true);
@@ -56,6 +57,7 @@ export async function downloadBook(email: string, password: string, bookTitle: s
                 writer.on('close', async () => {
                     console.log('Download completed');
                     await onDownloadFinish();
+                    page.removeListener('request', handleRequest); 
                     resolve();
                 });
         
@@ -70,6 +72,7 @@ export async function downloadBook(email: string, password: string, bookTitle: s
     });
 
     await page.goto('https://www.audible.com/sign-in'); 
+
 
     let attempts = 0;
     while (attempts < 3) {

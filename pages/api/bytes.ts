@@ -8,6 +8,8 @@ import os from 'os'
 const email = process.env.EMAIL;
 const password = process.env.PASSWORD;
 
+
+
 async function runFfprobe(pathToFile: string) {
     const command = `ffprobe "${pathToFile}"`;
     return new Promise((resolve, reject) => {
@@ -26,36 +28,45 @@ async function runFfprobe(pathToFile: string) {
 async function runRcrack(key: string) {
     let rcrackPath: string;
     let command: string;
-
+  
     if (os.platform() === 'win32') {
+      
         rcrackPath = path.resolve(process.cwd(), './public/tables-master/run/rcrack.exe');
         command = `${rcrackPath} . -h ${key}`;
     } else {
+      
         rcrackPath = path.resolve(process.cwd(), './public/tables-master/run/rcrack');
-        command = `WINEPREFIX=~/.wine64 WINEARCH=win64 wine ${rcrackPath} . -h ${key}`; // set WINEPREFIX and WINEARCH
+        command = `wine ${rcrackPath} . -h ${key}`;
     }
-
 
     return new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
+>>>>>>> parent of 94fea77 (wine)
             if (error) {
                 reject(error);
                 return;
             }
             const match = stdout.match(/hex:(\w+)/);
-            const key = match ? match[1] : null;
+            const activationBytes = match ? match[1] : null;
 
-            if (key) {
+            if (activationBytes) {
+                // Update the .env.local file if it exists
                 const envFilePath = path.resolve(process.cwd(), '.env.local');
-                let envFileContent = fs.readFileSync(envFilePath, 'utf8');
-                envFileContent = envFileContent.replace(/(ACTIVATION_BYTES=).*/, `$1${key}`);
-                fs.writeFileSync(envFilePath, envFileContent);
+                if (fs.existsSync(envFilePath)) {
+                    let envFileContent = fs.readFileSync(envFilePath, 'utf8');
+                    envFileContent = envFileContent.replace(/(ACTIVATION_BYTES=).*/, `$1${activationBytes}`);
+                    fs.writeFileSync(envFilePath, envFileContent);
+                } else {
+                    // If .env.local doesn't exist, log the activation bytes to the terminal and send them to the browser
+                    console.log(`Activation bytes: ${activationBytes}`);
+                    res.write(`Activation bytes: ${activationBytes}`);
+                }
             }
 
-            resolve(key);
-        });
+            resolve(activationBytes);
+      });
     });
-}
+  }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'GET') {
@@ -82,7 +93,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     return;
                 }
             });
-            res.send('Success'); // send a response indicating success
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
