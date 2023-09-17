@@ -6,7 +6,7 @@ import axios from 'axios';
 
 export async function processFile(pathToFile: string, finalJsonFolder: string) {
     const condaEnvName = 'btt';
-    const command = `conda run -n ${condaEnvName} whisperx ${pathToFile} --model large-v2 --align_model WAV2VEC2_ASR_LARGE_LV60K_960H --batch_size 8 --compute_type float32 --output_dir  ${finalJsonFolder}`;
+    const command = `conda run -n ${condaEnvName} whisperx ${pathToFile} --model large-v2 --align_model WAV2VEC2_ASR_LARGE_LV60K_960H --batch_size 8 --output_dir  ${finalJsonFolder}`;
     try {
         const stdout = execSync(command);
         return stdout;
@@ -87,7 +87,7 @@ export async function downloadBook(email: string, password: string, bookTitle: s
             await page.waitForTimeout(3000); 
         }
     }
-
+    console.log('Login successful');
     await page.goto('https://www.audible.com/library/titles');
 try {
     await page.waitForSelector('#lib-search');
@@ -115,6 +115,7 @@ try {
                     window.scrollBy(x, y);
                 }, boundingBox.x, boundingBox.y);
                 await downloadButton.click();
+                console.log('Download started');
             }
         }
     }
