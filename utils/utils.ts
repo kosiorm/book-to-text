@@ -33,10 +33,16 @@ export async function downloadBook(email: string, password: string, bookTitle: s
     const browser = await puppeteer.launch({
         headless: 'new',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+      });
     const page = await browser.newPage();
 
     await page.setViewport({ width: 1280, height: 800 });
+
+    if (fs.existsSync(aarPath)) {
+        console.log('Using local AAX file for testing');
+        await onDownloadFinish();
+        return { browser, page };
+    }
 
     await page.setRequestInterception(true);
 
@@ -74,10 +80,10 @@ export async function downloadBook(email: string, password: string, bookTitle: s
 
     await page.goto('https://www.audible.com/sign-in'); 
 
-
+    
     let attempts = 0;
-    while (attempts < 3) {
-        const captchaElement = await page.$('.a-row.a-text-center img');
+while (attempts < 3) {
+    const captchaElement = await page.$('.a-row.a-text-center img');
 
         if (captchaElement) {
             const captchaImage = await captchaElement.screenshot({ encoding: 'base64' });
@@ -96,7 +102,7 @@ export async function downloadBook(email: string, password: string, bookTitle: s
                 (document.querySelector('button[type="submit"].a-button-text') as HTMLElement).click();
             });
 
-            attempts++;
+        attempts++;
 
            
             await page.waitForTimeout(3000); 
@@ -110,27 +116,28 @@ export async function downloadBook(email: string, password: string, bookTitle: s
             break;
         }
     }
+}
 
-    if (attempts === 3) {
-        throw new Error('Failed to solve captcha after 3 attempts');
-    }
+if (attempts === 3) {
+    throw new Error('Failed to solve captcha after 3 attempts');
+}
 
     console.log('Login successful');
     await page.waitForFunction(`window.location.href === 'https://www.audible.com/?loginAttempt=true'`); 
 
-    await Promise.all([
-        page.waitForNavigation(), 
-        page.goto('https://www.audible.com/library/titles'), 
-    ]);
+await Promise.all([
+    page.waitForNavigation(), 
+    page.goto('https://www.audible.com/library/titles'), 
+]);
 
     try {
-        await page.waitForSelector('#lib-search');
-        await page.type('#lib-search', bookTitle);
-        await page.keyboard.press('Enter');
-        await page.waitForSelector('.adbl-library-content-row');
-    } catch (error) {
-        console.error(`Error during page interaction: ${error}`);
-    }
+    await page.waitForSelector('#lib-search');
+    await page.type('#lib-search', bookTitle);
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.adbl-library-content-row');
+} catch (error) {
+    console.error(`Error during page interaction: ${error}`);
+}
 
     const bookElements = await page.$$('.adbl-library-content-row');
     const bookElement = bookElements.find(async (el) => {
@@ -153,7 +160,6 @@ export async function downloadBook(email: string, password: string, bookTitle: s
             }
         }
     }
-
     return { browser, page };
 }
 
