@@ -8,8 +8,6 @@ import os from 'os'
 const email = process.env.EMAIL;
 const password = process.env.PASSWORD;
 
-
-
 async function runFfprobe(pathToFile: string) {
     const command = `ffprobe "${pathToFile}"`;
     return new Promise((resolve, reject) => {
@@ -54,7 +52,7 @@ async function runRcrack(key: string) {
                     envFileContent = envFileContent.replace(/(ACTIVATION_BYTES=).*/, `$1${activationBytes}`);
                     fs.writeFileSync(envFilePath, envFileContent);
                 } else {
-                    // If .env.local doesn't exist, log the activation bytes to the terminal and send them to the browser
+                  
                     console.log(`Activation bytes: ${activationBytes}`);
                 }
             }
@@ -77,18 +75,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const aarPath = resolve(process.cwd(), './public/aar', `${fileName}.aax`);
 
         try {
-            const { browser, page } = await downloadBook(email, password, bookTitle, aarPath, async () => {
+            const result = await downloadBook(email, password, bookTitle, aarPath, async () => {
                 const key = await runFfprobe(aarPath);
                 if (key) {
-                    await runRcrack(key as string);
-                    await browser.close();
-                    res.write('Extracting activation bytes complete');
-                    res.end();
+                    const activationBytes = await runRcrack(key as string);
+                    if (activationBytes) {
+                        res.status(200).json({ message: 'Extracting activation bytes complete', activationBytes });
+                    } else {
+                        res.status(500).json({ error: 'Activation bytes extraction failed' });
+                    }
                 } else {
                     res.status(500).json({ error: 'Key extraction failed' });
                     return;
                 }
             });
+
+            if (result && result.browser) {
+                await result.browser.close();
+            }
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
