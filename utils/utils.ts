@@ -25,7 +25,7 @@ export async function processFile(pathToFile: string, finalJsonFolder: string) {
 
 export async function downloadBook(email: string, password: string, bookTitle: string, aarPath: string, onDownloadFinish: () => Promise<void>) {
     if (fs.existsSync(aarPath)) {
-        console.log('Using local AAX file for testing');
+        console.log('Using local AAX file');
         await onDownloadFinish();
         return;
     }
@@ -33,14 +33,21 @@ export async function downloadBook(email: string, password: string, bookTitle: s
     const browser = await puppeteer.launch({
         headless: 'new',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+      });
     const page = await browser.newPage();
-
 
     await page.setViewport({ width: 1280, height: 800 });
 
+    if (fs.existsSync(aarPath)) {
+        console.log('Using local AAX file for testing');
+        await onDownloadFinish();
+        return { browser, page };
+    }
+
     await page.setRequestInterception(true);
-    page.on('request', async (interceptedRequest) => {
+
+    // Define handleRequest in the same scope where you're adding and removing the listener
+    const handleRequest = async (interceptedRequest: puppeteer.HTTPRequest) => {
         if (interceptedRequest.url().includes('download?asin=')) {
             const downloadUrl = interceptedRequest.url();
             interceptedRequest.continue();
@@ -53,14 +60,14 @@ export async function downloadBook(email: string, password: string, bookTitle: s
             const writer = fs.createWriteStream(aarPath);
             response.data.pipe(writer);
 
-            return new Promise((resolve, reject) => {
+            return new Promise<void>((resolve, reject) => {
                 writer.on('close', async () => {
                     console.log('Download completed');
                     await onDownloadFinish();
                     page.removeListener('request', handleRequest); 
                     resolve();
                 });
-        
+            
                 writer.on('error', (error) => {
                     console.error(`Error during download: ${error}`);
                     reject(error);
@@ -69,38 +76,38 @@ export async function downloadBook(email: string, password: string, bookTitle: s
         } else {
             interceptedRequest.continue();
         }
-    });
+    };
 
     await page.goto('https://www.audible.com/sign-in'); 
 
-
+    
     let attempts = 0;
-    while (attempts < 3) {
-        const captchaElement = await page.$('.a-row.a-text-center img');
+while (attempts < 3) {
+    const captchaElement = await page.$('.a-row.a-text-center img');
 
         if (captchaElement) {
             const captchaImage = await captchaElement.screenshot({ encoding: 'base64' });
-            const captchaSolution = await solver.imageCaptcha(captchaImage);
-            const captchaSolutionUpperCase = captchaSolution.data.toUpperCase(); // convert the solution to uppercase
-            // Enter the captcha solution into the page
+            const captchaSolution = await solver.imageCaptcha(captchaImage as string);
+            const captchaSolutionUpperCase = captchaSolution.data.toUpperCase(); 
+            
             await page.evaluate((solution) => {
-                document.querySelector('#captchacharacters').value = solution;
-            }, captchaSolutionUpperCase); // use captchaSolutionUpperCase instead of captchaSolution.data
+                (document.querySelector('#captchacharacters') as HTMLInputElement).value = solution;
+            }, captchaSolutionUpperCase); 
 
-            // Wait for a moment before clicking the continue button
-            await page.waitForTimeout(1000); // wait for 1 second
+            
+            await page.waitForTimeout(1000); 
 
-            // Click the continue button
+            
             await page.evaluate(() => {
-                document.querySelector('button[type="submit"].a-button-text').click();
+                (document.querySelector('button[type="submit"].a-button-text') as HTMLElement).click();
             });
 
-            attempts++;
+        attempts++;
 
-            // Wait for the page to load
-            await page.waitForTimeout(3000); // wait for 3 seconds
+           
+            await page.waitForTimeout(3000); 
         } else {
-            // If the captcha doesn't appear, proceed to the login page:
+            
             await page.waitForSelector('#ap_email');
             await page.type('#ap_email', email, { delay: 100 });
             await page.waitForSelector('#ap_password');
@@ -109,27 +116,28 @@ export async function downloadBook(email: string, password: string, bookTitle: s
             break;
         }
     }
+}
 
-    if (attempts === 3) {
-        throw new Error('Failed to solve captcha after 3 attempts');
-    }
+if (attempts === 3) {
+    throw new Error('Failed to solve captcha after 3 attempts');
+}
 
     console.log('Login successful');
-    await page.waitForNavigation({ url: 'https://www.audible.com/?loginAttempt=true' }); 
+    await page.waitForFunction(`window.location.href === 'https://www.audible.com/?loginAttempt=true'`); 
 
-    await Promise.all([
-        page.waitForNavigation(), 
-        page.goto('https://www.audible.com/library/titles'), 
-    ]);
+await Promise.all([
+    page.waitForNavigation(), 
+    page.goto('https://www.audible.com/library/titles'), 
+]);
 
     try {
-        await page.waitForSelector('#lib-search');
-        await page.type('#lib-search', bookTitle);
-        await page.keyboard.press('Enter');
-        await page.waitForSelector('.adbl-library-content-row');
-    } catch (error) {
-        console.error(`Error during page interaction: ${error}`);
-    }
+    await page.waitForSelector('#lib-search');
+    await page.type('#lib-search', bookTitle);
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.adbl-library-content-row');
+} catch (error) {
+    console.error(`Error during page interaction: ${error}`);
+}
 
     const bookElements = await page.$$('.adbl-library-content-row');
     const bookElement = bookElements.find(async (el) => {
@@ -152,7 +160,6 @@ export async function downloadBook(email: string, password: string, bookTitle: s
             }
         }
     }
-
     return { browser, page };
 }
 
