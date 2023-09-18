@@ -28,7 +28,9 @@ dpkg --add-architecture i386 || handle_error 170
 
 apt-get update || handle_error 10
 
-apt-get install -y wine32 || handle_error 180
+apt-get install -y wine64 || handle_error 180
+
+WINEARCH=win64 WINEPREFIX=~/.wine wineboot -u || handle_error 190
 
 apt-get update || handle_error 10
 

@@ -27,7 +27,7 @@ export async function downloadBook(email: string, password: string, bookTitle: s
     if (fs.existsSync(aarPath)) {
         console.log('Using local AAX file for testing');
         await onDownloadFinish();
-        return;
+        return Promise.resolve({ browser: null, page: null });
     }
 
     const browser = await puppeteer.launch({
@@ -36,10 +36,10 @@ export async function downloadBook(email: string, password: string, bookTitle: s
     });
     const page = await browser.newPage();
 
-
     await page.setViewport({ width: 1280, height: 800 });
 
     await page.setRequestInterception(true);
+    let downloadStarted = false; // Add this flag
     page.on('request', async (interceptedRequest) => {
         if (interceptedRequest.url().includes('download?asin=')) {
             const downloadUrl = interceptedRequest.url();
@@ -53,19 +53,22 @@ export async function downloadBook(email: string, password: string, bookTitle: s
             const writer = fs.createWriteStream(aarPath);
             response.data.pipe(writer);
 
-            return new Promise((resolve, reject) => {
-                writer.on('close', async () => {
-                    console.log('Download completed');
-                    await onDownloadFinish();
-                    page.removeListener('request', handleRequest); 
-                    resolve();
+            if (!downloadStarted) { // Check the flag before adding the event listener
+                downloadStarted = true; // Set the flag to true
+                return new Promise((resolve, reject) => {
+                    writer.on('close', async () => {
+                        console.log('Download completed');
+                        await onDownloadFinish();
+                        page.removeListener('request', handleRequest); 
+                        resolve();
+                    });
+
+                    writer.on('error', (error) => {
+                        console.error(`Error during download: ${error}`);
+                        reject(error);
+                    });
                 });
-        
-                writer.on('error', (error) => {
-                    console.error(`Error during download: ${error}`);
-                    reject(error);
-                });
-            });
+            }
         } else {
             interceptedRequest.continue();
         }
