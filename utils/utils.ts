@@ -40,7 +40,7 @@ export async function downloadBook(email: string, password: string, bookTitle: s
 
     await page.setRequestInterception(true);
     let downloadStarted = false; // Add this flag
-    page.on('request', async (interceptedRequest) => {
+    const handleRequest = async (interceptedRequest) => {
         if (interceptedRequest.url().includes('download?asin=')) {
             const downloadUrl = interceptedRequest.url();
             interceptedRequest.continue();
@@ -72,7 +72,8 @@ export async function downloadBook(email: string, password: string, bookTitle: s
         } else {
             interceptedRequest.continue();
         }
-    });
+    };
+    page.on('request', handleRequest);
 
     await page.goto('https://www.audible.com/sign-in'); 
 
