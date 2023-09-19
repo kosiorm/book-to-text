@@ -3,7 +3,6 @@ import fs from 'fs';
 import path, { resolve } from 'path';
 import { downloadFile, processDownloadedFile, downloadBook, convertAndUploadAAX } from '../../utils/utils';
 
-process.env.PATH = process.env.PATH + ':/path/to/whisperx';
 
 const email = process.env.EMAIL;
 const password = process.env.PASSWORD;
@@ -18,10 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const host = req.headers['host'];
         const baseUrl = `${protocol}://${host}`;
 
-        if (!email || !password || !activationBytes) {
-            res.status(500).json({ error: 'Required environment variables are not set' });
-            return;
-        }
+    
 
         if (mp3Url) {
             const fileName = mp3Url.split('/').pop()?.split('.')[0];
@@ -48,30 +44,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const aarPath = resolve(process.cwd(), './public/aar', `${fileName}.aax`);
             const mp3Url = `${baseUrl}/audio/${fileName}.mp3`;
             const jsonUrl = `${baseUrl}/json/${fileName}/${fileName}.json`;
-
+        
             res.status(200).json({ mp3Url, jsonUrl });
-
-            if (fs.existsSync(aarPath)) {
-                console.log('Using local AAX file ');
-                console.log('Starting conversion...');
-                await convertAndUploadAAX(aarPath, fileName, baseUrl, activationBytes);
-                console.log('Conversion finished');
-            } else {
+        
                 try {
-                    const { browser } = await downloadBook(email, password, bookTitle, aarPath, async () => {
-                        console.log('Starting conversion...');
-                        await convertAndUploadAAX(aarPath, fileName, baseUrl, activationBytes);
-                        console.log('Conversion finished');
-                        await browser.close();
-                    });
+                    console.log('Starting download of book...');
+                    await downloadBook(bookTitle);
+                    console.log('Finished download of book. Starting conversion...');
+                    await convertAndUploadAAX(aarPath, fileName, baseUrl, activationBytes);
+                    console.log('Conversion finished');
                 } catch (error) {
                     console.error(error.message);
                 }
             }
         } else {
-            res.status(400).json({ error: 'Either bookTitle or mp3Url is required' });
+            res.status(405).json({ message: 'Method not allowed' });
         }
-    } else {
-        res.status(405).json({ message: 'Method not allowed' });
     }
-}

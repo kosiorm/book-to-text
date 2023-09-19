@@ -23,141 +23,21 @@ export async function processFile(pathToFile: string, finalJsonFolder: string) {
     }
 }
 
-export async function downloadBook(email: string, password: string, bookTitle: string, aarPath: string, onDownloadFinish: () => Promise<void>) {
-    if (fs.existsSync(aarPath)) {
-        console.log('Using local AAX file for testing');
-        await onDownloadFinish();
-        return Promise.resolve({ browser: null, page: null });
-    }
-
-    const browser = await puppeteer.launch({
-        headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-    const page = await browser.newPage();
-
-    await page.setViewport({ width: 1280, height: 800 });
-
-    await page.setRequestInterception(true);
-    let downloadStarted = false; // Add this flag
-    const handleRequest = async (interceptedRequest) => {
-        if (interceptedRequest.url().includes('download?asin=')) {
-            const downloadUrl = interceptedRequest.url();
-            interceptedRequest.continue();
-
-            const response = await axios.get(downloadUrl, {
-                headers: interceptedRequest.headers(),
-                responseType: 'stream'
-            });
-
-            const writer = fs.createWriteStream(aarPath);
-            response.data.pipe(writer);
-
-            if (!downloadStarted) { // Check the flag before adding the event listener
-                downloadStarted = true; // Set the flag to true
-                return new Promise((resolve, reject) => {
-                    writer.on('close', async () => {
-                        console.log('Download completed');
-                        await onDownloadFinish();
-                        page.removeListener('request', handleRequest); 
-                        resolve();
-                    });
-
-                    writer.on('error', (error) => {
-                        console.error(`Error during download: ${error}`);
-                        reject(error);
-                    });
-                });
+export async function downloadBook(bookTitle: string) {
+    const outputDir = path.resolve(process.cwd(), './public/aar');
+    return new Promise((resolve, reject) => {
+        console.log(`Starting download of book: ${bookTitle}`);
+        exec(`audible download --aax --title '${bookTitle}' --output-dir '${outputDir}'`, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error executing audible-cli: ${error}`);
+                reject(error);
+                return;
             }
-        } else {
-            interceptedRequest.continue();
-        }
-    };
-    page.on('request', handleRequest);
-
-    await page.goto('https://www.audible.com/sign-in'); 
-
-
-    let attempts = 0;
-    while (attempts < 3) {
-        const captchaElement = await page.$('.a-row.a-text-center img');
-
-        if (captchaElement) {
-            const captchaImage = await captchaElement.screenshot({ encoding: 'base64' });
-            const captchaSolution = await solver.imageCaptcha(captchaImage);
-            const captchaSolutionUpperCase = captchaSolution.data.toUpperCase(); // convert the solution to uppercase
-            // Enter the captcha solution into the page
-            await page.evaluate((solution) => {
-                document.querySelector('#captchacharacters').value = solution;
-            }, captchaSolutionUpperCase); // use captchaSolutionUpperCase instead of captchaSolution.data
-
-            // Wait for a moment before clicking the continue button
-            await page.waitForTimeout(1000); // wait for 1 second
-
-            // Click the continue button
-            await page.evaluate(() => {
-                document.querySelector('button[type="submit"].a-button-text').click();
-            });
-
-            attempts++;
-
-            // Wait for the page to load
-            await page.waitForTimeout(3000); // wait for 3 seconds
-        } else {
-            // If the captcha doesn't appear, proceed to the login page:
-            await page.waitForSelector('#ap_email');
-            await page.type('#ap_email', email, { delay: 100 });
-            await page.waitForSelector('#ap_password');
-            await page.type('#ap_password', password, { delay: 100 });
-            await page.click('#signInSubmit');
-            break;
-        }
-    }
-
-    if (attempts === 3) {
-        throw new Error('Failed to solve captcha after 3 attempts');
-    }
-
-    console.log('Login successful');
-    await page.waitForNavigation({ url: 'https://www.audible.com/?loginAttempt=true' }); 
-
-    await Promise.all([
-        page.waitForNavigation(), 
-        page.goto('https://www.audible.com/library/titles'), 
-    ]);
-
-    try {
-        await page.waitForSelector('#lib-search');
-        await page.type('#lib-search', bookTitle);
-        await page.keyboard.press('Enter');
-        await page.waitForSelector('.adbl-library-content-row');
-    } catch (error) {
-        console.error(`Error during page interaction: ${error}`);
-    }
-
-    const bookElements = await page.$$('.adbl-library-content-row');
-    const bookElement = bookElements.find(async (el) => {
-        const textContent = await page.evaluate(el => el.textContent, el);
-        return textContent ? textContent.includes(bookTitle) : false;
+            console.log(`audible-cli output: ${stdout}`);
+            console.log(`Finished download of book: ${bookTitle}`);
+            resolve(stdout);
+        });
     });
-
-    if (bookElement) {
-        const downloadButtonSelector = 'span[id^="download-button-"] > a.bc-button-text';
-        const downloadButton = await bookElement.$(downloadButtonSelector);
-
-        if (downloadButton) {
-            const boundingBox = await downloadButton.boundingBox();
-            if (boundingBox) {
-                await page.evaluate((x, y) => {
-                    window.scrollBy(x, y);
-                }, boundingBox.x, boundingBox.y);
-                await downloadButton.click();
-                console.log('Download started');
-            }
-        }
-    }
-
-    return { browser, page };
 }
 
 export async function convertAndUploadAAX(aarPath: string, fileName: string, baseUrl: string, activationBytes: string) {
