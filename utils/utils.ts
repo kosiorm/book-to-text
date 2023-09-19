@@ -2,7 +2,6 @@ import { exec, execSync } from 'child_process';
 import fs from 'fs';
 import path, { resolve } from 'path';
 import axios from 'axios';
-import { Solver } from '2captcha';
 
 
 export async function processFile(pathToFile: string, finalJsonFolder: string) {
@@ -27,14 +26,13 @@ export async function downloadBook(bookTitle: string) {
     const password = process.env.PASSWORD;
     let command = `echo a | audible download --aax --title '${bookTitle}' --output-dir '${outputDir}'`;
 
-    // Include the password in the command if it exists
     if (password) {
         command = `audible -p ${password} download -y --aax --title '${bookTitle}' --output-dir '${outputDir}'`;
     }
 
     return new Promise((resolve, reject) => {
         console.log(`Starting download of book: ${bookTitle}`);
-        exec(command, { maxBuffer: 1024 * 5000 }, (error, stdout, stderr) => { // Increase maxBuffer size to 5MB
+        exec(command, { maxBuffer: 1024 * 5000 }, (error, stdout, stderr) => { 
             if (error) {
                 console.error(`Error executing audible-cli: ${error}`);
                 reject(error);
@@ -103,7 +101,6 @@ export async function processMp3Url(mp3Url: string, baseUrl: string) {
         jsonUrl: `${baseUrl}/json/${fileName}/${fileName}.json`
     };
 
-    // Start the download and processing in the background
     downloadFile(mp3Url, pathToFile)
         .then(() => processDownloadedFile(pathToFile, finalJsonFolder))
         .catch(error => console.error(`Error during download: ${error}`));

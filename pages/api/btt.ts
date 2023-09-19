@@ -24,49 +24,60 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 res.status(400).json({ error: error.message });
             }
         } else if (bookTitle) {
-            const bookTitleNoSpaces = bookTitle.replace(/ /g, '_'); // replace spaces with underscores
+            const bookTitleNoSpaces = bookTitle.replace(/ /g, '_');
+            const mp3Url = `${baseUrl}/audio/${bookTitleNoSpaces}.mp3`;
+            const jsonUrl = `${baseUrl}/json/${bookTitleNoSpaces}/${bookTitleNoSpaces}.json`;
+            res.status(200).json({ mp3Url, jsonUrl });
 
             try {
                 console.log('Starting download of book...');
                 const originalFileName = await downloadBook(bookTitle);
                 console.log('Finished download of book. Starting conversion...');
-
+            
                 const oldPath = resolve(process.cwd(), './public/aar', originalFileName);
                 const newPath = resolve(process.cwd(), './public/aar', `${bookTitleNoSpaces}.aax`);
                 fs.renameSync(oldPath, newPath);
-
+            
                 const aarPath = newPath;
-                const mp3Url = `${baseUrl}/audio/${bookTitleNoSpaces}.mp3`;
-                const jsonUrl = `${baseUrl}/json/${bookTitleNoSpaces}/${bookTitleNoSpaces}.json`;
-                res.status(200).json({ mp3Url, jsonUrl });
-
+              
+                
                 let command = 'audible activation-bytes';
                 if (password) {
                     command = `audible -p ${password} activation-bytes`;
                 }
-
-                exec(command, (error, stdout, stderr) => {
-                    if (error) {
-                        console.error(`Error executing audible-cli: ${error}`);
-                        return;
-                    }
-
-                    const activationBytes = stdout.trim();
-
-                    const envFilePath = path.resolve(process.cwd(), '.env.local');
-                    if (fs.existsSync(envFilePath)) {
-                        let envFileContent = fs.readFileSync(envFilePath, 'utf8');
-                        envFileContent = envFileContent.replace(/(ACTIVATION_BYTES=).*/, `$1${activationBytes}`);
-                        fs.writeFileSync(envFilePath, envFileContent);
-                    } else {
-                        process.env.ACTIVATION_BYTES = activationBytes;
-                        console.log(`Activation bytes: ${activationBytes}`);
-                    }
-
-                    convertAndUploadAAX(aarPath, bookTitleNoSpaces, baseUrl, activationBytes).catch(console.error);
-                });
+            
+                await new Promise((resolve, reject) => {
+                    exec(command, async (error, stdout, stderr) => {
+                        if (error) {
+                            console.error(`Error executing audible-cli: ${error}`);
+                            reject(error);
+                            return;
+                        }
+            
+                        const activationBytes = stdout.trim();
+            
+                        const envFilePath = path.resolve(process.cwd(), '.env.local');
+                        if (fs.existsSync(envFilePath)) {
+                            let envFileContent = fs.readFileSync(envFilePath, 'utf8');
+                            envFileContent = envFileContent.replace(/(ACTIVATION_BYTES=).*/, `$1${activationBytes}`);
+                            fs.writeFileSync(envFilePath, envFileContent);
+                        } else {
+                            process.env.ACTIVATION_BYTES = activationBytes;
+                            console.log(`Activation bytes: ${activationBytes}`);
+                        }
+            
+                        try {
+                            await convertAndUploadAAX(aarPath, bookTitleNoSpaces, baseUrl, activationBytes);
+                            resolve();
+                        } catch (error) {
+                            reject(error);
+                        }
+                    });
+                }).catch(console.error);
+            
             } catch (error) {
                 console.error(error.message);
+                res.status(500).json({ error: error.message });
             }
         }
     }
