@@ -4,13 +4,13 @@ import path, { resolve } from 'path';
 import axios from 'axios';
 import { Solver } from '2captcha';
 
-const solver = new Solver('8001c8f996159eff564e918e52500534');
 
 export async function processFile(pathToFile: string, finalJsonFolder: string) {
     const condaEnvName = 'btt';
     const command = `conda run -n ${condaEnvName} whisperx ${pathToFile} --model large-v2 --align_model WAV2VEC2_ASR_LARGE_LV60K_960H --batch_size 8 --output_dir  ${finalJsonFolder}`;
     try {
         const stdout = execSync(command);
+        console.log('Finished processing request.');
         return stdout;
     } catch (error) {
         if (error instanceof Error) {
@@ -59,8 +59,8 @@ export async function downloadBook(bookTitle: string) {
     });
 }
 
-export async function convertAndUploadAAX(aarPath: string, fileName: string, baseUrl: string, activationBytes: string) {
-    const mp3Path = resolve(process.cwd(), './public/audio', `${fileName}.mp3`);
+export async function convertAndUploadAAX(aarPath: string, bookTitle: string, baseUrl: string, activationBytes: string) {
+    const mp3Path = resolve(process.cwd(), './public/audio', `${bookTitle}.mp3`);
     const command = `ffmpeg -y -activation_bytes ${activationBytes} -i "${aarPath}" "${mp3Path}"`;
 
     try {
@@ -68,7 +68,7 @@ export async function convertAndUploadAAX(aarPath: string, fileName: string, bas
         execSync(command);
         console.log('Conversion completed successfully');
         const pathToFile = mp3Path;
-        const finalJsonFolder = path.resolve('./public/json', fileName.split('.')[0]);
+        const finalJsonFolder = path.resolve('./public/json', bookTitle);
         if (!fs.existsSync(finalJsonFolder)) {
             fs.mkdirSync(finalJsonFolder);
         }
@@ -89,9 +89,33 @@ export async function downloadFile(url: string, pathToFile: string) {
     });
 }
 
+export async function processMp3Url(mp3Url: string, baseUrl: string) {
+    console.log('Processing request...');
+    const fileName = mp3Url.split('/').pop()?.split('.')[0];
+    if (!fileName) {
+        throw new Error('Invalid mp3Url');
+    }
+    const pathToFile = resolve(process.cwd(), './public/audio', `${fileName}.mp3`);
+    const finalJsonFolder = path.resolve('./public/json', fileName);
+
+    const result = {
+        mp3Url: `${baseUrl}/audio/${fileName}.mp3`,
+        jsonUrl: `${baseUrl}/json/${fileName}/${fileName}.json`
+    };
+
+    // Start the download and processing in the background
+    downloadFile(mp3Url, pathToFile)
+        .then(() => processDownloadedFile(pathToFile, finalJsonFolder))
+        .catch(error => console.error(`Error during download: ${error}`));
+
+    return result;
+}
+
 export async function processDownloadedFile(pathToFile: string, finalJsonFolder: string) {
     if (!fs.existsSync(finalJsonFolder)) {
         fs.mkdirSync(finalJsonFolder);
     }
+
     return processFile(pathToFile, finalJsonFolder);
+    
 } 

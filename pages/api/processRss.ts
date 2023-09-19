@@ -1,65 +1,60 @@
+import { processMp3Url } from '../../utils/utils';
 import Parser from 'rss-parser';
 import path, { resolve } from 'path';
-import { downloadFile, processDownloadedFile } from '../../utils/utils';
 import type { NextApiRequest, NextApiResponse } from 'next'
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    console.log('Processing request...'); 
+export default async function handler(req: NextApiRequest, res: NextApiResponse) { 
     if (req.method === 'GET') {
         let searchPhrase = req.query.searchPhrase as string | undefined;
         const rssUrl = req.query.rssUrl as string | undefined;
+        const mp3Url = req.query.mp3Url as string | undefined;
 
-        if (!searchPhrase || !rssUrl) {
-            res.status(500).json({ error: 'Required parameters are not set' });
-            return;
-        }
+        const protocol = req.headers['x-forwarded-proto'] || 'http';
+        const host = req.headers['host'];
+        const baseUrl = `${protocol}://${host}`;
 
-        if (!isNaN(Number(searchPhrase))) {
-            searchPhrase = '#' + searchPhrase;
-        }
+        if (mp3Url) {
+            // Process mp3Url directly
+            try {
+                const result = await processMp3Url(mp3Url, baseUrl, true);
+                res.status(200).json(result);
+            } catch (error) {
+                res.status(400).json({ error: error.message });
+            }
+        } else if (rssUrl && searchPhrase) {
+            // Parse RSS feed and filter items
+            if (!isNaN(Number(searchPhrase))) {
+                searchPhrase = '#' + searchPhrase;
+            }
 
-        const parser = new Parser();
-        const feed = await parser.parseURL(rssUrl);
+            const parser = new Parser();
+            const feed = await parser.parseURL(rssUrl);
 
-        const items = feed.items.filter(item => (" " + item.title + " ").includes(" " + searchPhrase + " "));
+            const items = feed.items.filter(item => (" " + item.title + " ").includes(" " + searchPhrase + " "));
 
-        if (items.length > 0) {
-            const protocol = req.headers['x-forwarded-proto'] || 'http';
-            const host = req.headers['host'];
-            const baseUrl = `${protocol}://${host}`;
-
-            if (items.length === 1) {
+            if (items.length > 0) {
                 const item = items[0];
                 const mp3Url = item.enclosure ? item.enclosure.url : null;
-                const splitUrl = mp3Url ? mp3Url.split('/') : null;
-                const lastPartOfUrl = splitUrl ? splitUrl.pop() : null;
-                const fileName = lastPartOfUrl ? lastPartOfUrl.split('.')[0] : null;
-                const pathToFile = fileName ? resolve(process.cwd(), './public/audio', `${fileName}.mp3`) : null;
-                const finalJsonFolder = fileName ? path.resolve('./public/json', fileName) : null;
-
-                res.status(200).json({
-                    mp3Url: fileName ? `${baseUrl}/audio/${fileName}.mp3` : null,
-                    jsonUrl: fileName ? `${baseUrl}/json/${fileName}/${fileName}.json` : null
-                });
-
-                if (mp3Url && pathToFile && finalJsonFolder) {
+                if (mp3Url) {
                     try {
-                        await downloadFile(mp3Url, pathToFile);
-                        await processDownloadedFile(pathToFile, finalJsonFolder);
+                        const result = await processMp3Url(mp3Url, baseUrl, true);
+                        res.status(200).json(result);
+                        console.log('Finished processing request.');
                     } catch (error) {
-                        console.error(`Error during download: ${error}`);
+                        res.status(400).json({ error: error.message });
                     }
+                } else {
+                    res.status(404).json({ error: 'No MP3 URL found in the RSS item' });
                 }
             } else {
-                const results = items.map(item => ({ title: item.title }));
-                res.status(200).json(results);
+                res.status(404).json({ error: 'No matching items found in the RSS feed' });
             }
         } else {
-            res.status(404).json({ error: 'No matching items found in the RSS feed' });
+            res.status(400).json({ error: 'Either mp3Url or both rssUrl and searchPhrase must be provided' });
         }
     } else {
         res.status(405).json({ message: 'Method not allowed' });
     }
 
-    console.log('Finished processing request.');
+ 
 }

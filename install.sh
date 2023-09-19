@@ -44,6 +44,8 @@ apt-get install -y libxcomposite1
 
 apt-get install -y libxdamage1
 
+pip install  audible-cli
+
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash || handle_error 150
 
 export NVM_DIR="$HOME/.nvm"
@@ -74,4 +76,3 @@ conda install -c pytorch -c nvidia pytorch=2.0.0 torchaudio=2.0.0 torchvision -y
 
 pip install git+https://github.com/m-bain/whisperx.git || handle_error 140
 
-pip install audible-cli
