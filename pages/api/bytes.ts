@@ -13,6 +13,7 @@ const password = process.env.PASSWORD;
 async function runFfprobe(pathToFile: string) {
     const command = `ffprobe "${pathToFile}"`;
     return new Promise((resolve, reject) => {
+        console.log('Running ffprobe command:', command); // Add this line
         exec(command, (error, stdout, stderr) => {
             if (error) {
                 reject(error);
@@ -28,14 +29,10 @@ async function runFfprobe(pathToFile: string) {
 async function runRcrack(key: string) {
     let rcrackPath: string;
     let command: string;
-  
-    if (os.platform() === 'win32') {
-        rcrackPath = path.resolve(process.cwd(), './public/tables-master/run/rcrack.exe');
-        command = `${rcrackPath} . -h ${key}`;
-    } else {
+    
         rcrackPath = path.resolve(process.cwd(), './public/tables-master/run/rcrack');
-        command = `wine ${rcrackPath} . -h ${key}`;
-    }
+        command = `DISPLAY=:0.0 wine ${rcrackPath} .exe -h ${key}`;
+    
 
     return new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {

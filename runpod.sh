@@ -18,19 +18,23 @@ handle_error() {
     140) echo "Error occurred while installing whisperx.";;
     150) echo "Error occurred while installing Node.js and npm.";;
     160) echo "Error occurred while installing Wine.";;
+    170) echo "Error occurred while installing Xvfb.";;
     *) echo "An unknown error occurred.";;
   esac
   exit $1
 }
 
 
-dpkg --add-architecture i386 || handle_error 170
 
 apt-get update || handle_error 10
 
-apt-get install -y wine64 || handle_error 180
+apt-get install -y xvfb || handle_error 170  
 
-WINEARCH=win64 WINEPREFIX=~/.wine wineboot -u || handle_error 190
+xvfb :0 -screen 0 1024x768x16 &
+
+dpkg --add-architecture i386 || handle_error 170
+
+apt-get install -y wine || handle_error 180
 
 apt-get update || handle_error 10
 
@@ -79,3 +83,5 @@ conda activate btt || handle_error 120
 conda install -c pytorch -c nvidia pytorch=2.0.0 torchaudio=2.0.0 torchvision -y || handle_error 130
 
 pip install git+https://github.com/m-bain/whisperx.git || handle_error 140
+
+pip install audible-cli
