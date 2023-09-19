@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import fs from 'fs';
+import { exec } from 'child_process';
 import path, { resolve } from 'path';
 import { downloadFile, processDownloadedFile, downloadBook, convertAndUploadAAX } from '../../utils/utils';
-
 
 const email = process.env.EMAIL;
 const password = process.env.PASSWORD;
@@ -17,8 +17,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const host = req.headers['host'];
         const baseUrl = `${protocol}://${host}`;
 
-    
-
         if (mp3Url) {
             const fileName = mp3Url.split('/').pop()?.split('.')[0];
             if (!fileName) {
@@ -29,7 +27,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const finalJsonFolder = path.resolve('./public/json', fileName);
 
             res.status(200).json({ mp3Url: `${baseUrl}/audio/${fileName}.mp3`, jsonUrl: `${baseUrl}/json/${fileName}/${fileName}.json` });
-           
 
             try {
                 await downloadFile(mp3Url, pathToFile);
@@ -40,24 +37,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 console.error(`Error during download: ${error}`);
             }
         } else if (bookTitle) {
-            const fileName = bookTitle.replace(/ /g, '_');
-            const aarPath = resolve(process.cwd(), './public/aar', `${fileName}.aax`);
-            const mp3Url = `${baseUrl}/audio/${fileName}.mp3`;
-            const jsonUrl = `${baseUrl}/json/${fileName}/${fileName}.json`;
-        
-            res.status(200).json({ mp3Url, jsonUrl });
-        
-                try {
-                    console.log('Starting download of book...');
-                    await downloadBook(bookTitle);
-                    console.log('Finished download of book. Starting conversion...');
-                    await convertAndUploadAAX(aarPath, fileName, baseUrl, activationBytes);
-                    console.log('Conversion finished');
-                } catch (error) {
-                    console.error(error.message);
-                }
+            try {
+                console.log('Starting download of book...');
+                const fileName = await downloadBook(bookTitle);
+                console.log('Finished download of book. Starting conversion...');
+                const aarPath = resolve(process.cwd(), './public/aar', fileName);
+                const mp3Url = `${baseUrl}/audio/${fileName.replace('.aax', '.mp3')}`;
+                const jsonUrl = `${baseUrl}/json/${fileName.replace('.aax', '')}/${fileName.replace('.aax', '')}.json`;
+                res.status(200).json({ mp3Url, jsonUrl });
+    
+                // Get activation bytes
+                const command = 'audible activation-bytes';
+                exec(command, (error, stdout, stderr) => {
+                    if (error) {
+                        console.error(`Error executing audible-cli: ${error}`);
+                        return;
+                    }
+    
+                    const activationBytes = stdout.trim();
+                    const envFilePath = path.resolve(process.cwd(), '.env.local');
+                        if (fs.existsSync(envFilePath)) {
+                            let envFileContent = fs.readFileSync(envFilePath, 'utf8');
+                            envFileContent = envFileContent.replace(/(ACTIVATION_BYTES=).*/, `$1${activationBytes}`);
+                            fs.writeFileSync(envFilePath, envFileContent);
+                        } else {
+                       
+                        process.env.ACTIVATION_BYTES = activationBytes;
+                        console.log(`Activation bytes: ${activationBytes}`);
+                    }
+    
+                   
+                    convertAndUploadAAX(aarPath, fileName.replace('.aax', ''), baseUrl, activationBytes).catch(console.error);
+                });
+            } catch (error) {
+                console.error(error.message);
             }
-        } else {
-            res.status(405).json({ message: 'Method not allowed' });
         }
     }
+}

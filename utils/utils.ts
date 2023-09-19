@@ -1,4 +1,3 @@
-import puppeteer from 'puppeteer';
 import { exec, execSync } from 'child_process';
 import fs from 'fs';
 import path, { resolve } from 'path';
@@ -27,7 +26,7 @@ export async function downloadBook(bookTitle: string) {
     const outputDir = path.resolve(process.cwd(), './public/aar');
     return new Promise((resolve, reject) => {
         console.log(`Starting download of book: ${bookTitle}`);
-        exec(`audible download --aax --title '${bookTitle}' --output-dir '${outputDir}'`, (error, stdout, stderr) => {
+        exec(`echo a | audible download --aax --title '${bookTitle}' --output-dir '${outputDir}'`, (error, stdout, stderr) => {
             if (error) {
                 console.error(`Error executing audible-cli: ${error}`);
                 reject(error);
@@ -35,7 +34,19 @@ export async function downloadBook(bookTitle: string) {
             }
             console.log(`audible-cli output: ${stdout}`);
             console.log(`Finished download of book: ${bookTitle}`);
-            resolve(stdout);
+            
+            fs.readdir(outputDir, (err, files) => {
+                if (err) {
+                    reject(new Error(`Could not read the aar directory: ${err}`));
+                    return;
+                }
+                const fileName = files.find(file => file.includes(bookTitle.replace(/ /g, '_')));
+                if (fileName) {
+                    resolve(fileName);
+                } else {
+                    reject(new Error(`Could not find a file in the aar directory that includes the book title in its name`));
+                }
+            });
         });
     });
 }
