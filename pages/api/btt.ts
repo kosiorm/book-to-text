@@ -54,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                             return;
                         }
             
-                        const activationBytes = stdout.trim();
+                        const activationBytes = stdout.trim().split('\n').pop();
             
                         const envFilePath = path.resolve(process.cwd(), '.env.local');
                         if (fs.existsSync(envFilePath)) {

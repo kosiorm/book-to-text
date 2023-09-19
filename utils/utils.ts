@@ -24,7 +24,7 @@ export async function processFile(pathToFile: string, finalJsonFolder: string) {
 export async function downloadBook(bookTitle: string) {
     const outputDir = path.resolve(process.cwd(), './public/aar');
     const password = process.env.PASSWORD;
-    let command = `echo a | audible download --aax --title '${bookTitle}' --output-dir '${outputDir}'`;
+    let command = `audible download -y --aax --title '${bookTitle}' --output-dir '${outputDir}'`;
 
     if (password) {
         command = `audible -p ${password} download -y --aax --title '${bookTitle}' --output-dir '${outputDir}'`;
