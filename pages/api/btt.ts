@@ -4,7 +4,7 @@ import { exec } from 'child_process';
 import path, { resolve } from 'path';
 import { downloadFile, processDownloadedFile, downloadBook, convertAndUploadAAX } from '../../utils/utils';
 
-const email = process.env.EMAIL;
+
 const password = process.env.PASSWORD;
 const activationBytes = process.env.ACTIVATION_BYTES;
 
@@ -47,7 +47,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 res.status(200).json({ mp3Url, jsonUrl });
     
                 // Get activation bytes
-                const command = 'audible activation-bytes';
+                let command = 'audible activation-bytes';
+                if (password) {
+                    command = `audible -p ${password} activation-bytes`;
+                }
+
                 exec(command, (error, stdout, stderr) => {
                     if (error) {
                         console.error(`Error executing audible-cli: ${error}`);
@@ -55,18 +59,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     }
     
                     const activationBytes = stdout.trim();
+    
+                    // Update the .env.local file if it exists
                     const envFilePath = path.resolve(process.cwd(), '.env.local');
-                        if (fs.existsSync(envFilePath)) {
-                            let envFileContent = fs.readFileSync(envFilePath, 'utf8');
-                            envFileContent = envFileContent.replace(/(ACTIVATION_BYTES=).*/, `$1${activationBytes}`);
-                            fs.writeFileSync(envFilePath, envFileContent);
-                        } else {
-                       
+                    if (fs.existsSync(envFilePath)) {
+                        let envFileContent = fs.readFileSync(envFilePath, 'utf8');
+                        envFileContent = envFileContent.replace(/(ACTIVATION_BYTES=).*/, `$1${activationBytes}`);
+                        fs.writeFileSync(envFilePath, envFileContent);
+                    } else {
+                        // If .env.local doesn't exist, set the activation bytes as an environment variable
                         process.env.ACTIVATION_BYTES = activationBytes;
                         console.log(`Activation bytes: ${activationBytes}`);
                     }
     
-                   
+                    // Convert and upload AAX
                     convertAndUploadAAX(aarPath, fileName.replace('.aax', ''), baseUrl, activationBytes).catch(console.error);
                 });
             } catch (error) {

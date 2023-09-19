@@ -24,9 +24,17 @@ export async function processFile(pathToFile: string, finalJsonFolder: string) {
 
 export async function downloadBook(bookTitle: string) {
     const outputDir = path.resolve(process.cwd(), './public/aar');
+    const password = process.env.PASSWORD;
+    let command = `echo a | audible download --aax --title '${bookTitle}' --output-dir '${outputDir}'`;
+
+    // Include the password in the command if it exists
+    if (password) {
+        command = `audible -p ${password} download -y --aax --title '${bookTitle}' --output-dir '${outputDir}'`;
+    }
+
     return new Promise((resolve, reject) => {
         console.log(`Starting download of book: ${bookTitle}`);
-        exec(`echo a | audible download --aax --title '${bookTitle}' --output-dir '${outputDir}'`, (error, stdout, stderr) => {
+        exec(command, { maxBuffer: 1024 * 5000 }, (error, stdout, stderr) => { // Increase maxBuffer size to 5MB
             if (error) {
                 console.error(`Error executing audible-cli: ${error}`);
                 reject(error);
@@ -86,4 +94,4 @@ export async function processDownloadedFile(pathToFile: string, finalJsonFolder:
         fs.mkdirSync(finalJsonFolder);
     }
     return processFile(pathToFile, finalJsonFolder);
-}
+} 
